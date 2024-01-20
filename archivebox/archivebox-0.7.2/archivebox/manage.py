@@ -2,21 +2,23 @@
 import os
 import sys
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # if you're a developer working on archivebox, still prefer the archivebox
     # versions of ./manage.py commands whenever possible. When that's not possible
     # (e.g. makemigrations), you can comment out this check temporarily
 
-    if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
-        print("[X] Don't run ./manage.py directly (unless you are a developer running makemigrations):")
+    if not ("makemigrations" in sys.argv or "migrate" in sys.argv):
+        print(
+            "[X] Don't run ./manage.py directly (unless you are a developer running makemigrations):"
+        )
         print()
-        print('    Hint: Use these archivebox CLI commands instead of the ./manage.py equivalents:')
-        print('        archivebox init          (migrates the databse to latest version)')
-        print('        archivebox server        (runs the Django web server)')
-        print('        archivebox manage [cmd]  (any other management commands)')
+        print("    Hint: Use these archivebox CLI commands instead of the ./manage.py equivalents:")
+        print("        archivebox init          (migrates the databse to latest version)")
+        print("        archivebox server        (runs the Django web server)")
+        print("        archivebox manage [cmd]  (any other management commands)")
         raise SystemExit(2)
 
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

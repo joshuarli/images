@@ -1,5 +1,5 @@
-__package__ = 'archivebox.parsers'
-__description__ = 'URL list'
+__package__ = "archivebox.parsers"
+__description__ = "URL list"
 
 import re
 
@@ -32,6 +32,6 @@ def parse_url_list(text_file: IO[str], **_kwargs) -> Iterable[Link]:
         )
 
 
-KEY = 'url_list'
-NAME = 'URL List'
+KEY = "url_list"
+NAME = "URL List"
 PARSER = parse_url_list

@@ -1,5 +1,5 @@
-__package__ = 'archivebox.parsers'
-__description__ = 'Plain Text'
+__package__ = "archivebox.parsers"
+__description__ = "Plain Text"
 
 import re
 
@@ -8,11 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..index.schema import Link
-from ..util import (
-    htmldecode,
-    enforce_types,
-    URL_REGEX
-)
+from ..util import htmldecode, enforce_types, URL_REGEX
 
 
 @enforce_types
@@ -60,6 +56,7 @@ def parse_generic_txt_export(text_file: IO[str], **_kwargs) -> Iterable[Link]:
                     sources=[text_file.name],
                 )
 
-KEY = 'txt'
-NAME = 'Generic TXT'
+
+KEY = "txt"
+NAME = "Generic TXT"
 PARSER = parse_generic_txt_export

@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 from pathlib import Path
 
@@ -17,37 +17,43 @@ from ..config import (
     CURL_USER_AGENT,
     CURL_VERSION,
     CHECK_SSL_VALIDITY,
-    SAVE_HEADERS
+    SAVE_HEADERS,
 )
 from ..logging_util import TimedProgress
 
+
 @enforce_types
-def should_save_headers(link: Link, out_dir: Optional[str]=None, overwrite: Optional[bool]=False) -> bool:
+def should_save_headers(
+    link: Link, out_dir: Optional[str] = None, overwrite: Optional[bool] = False
+) -> bool:
     out_dir = out_dir or Path(link.link_dir)
-    if not overwrite and (out_dir / 'headers.json').exists():
+    if not overwrite and (out_dir / "headers.json").exists():
         return False
 
     return SAVE_HEADERS
 
 
 @enforce_types
-def save_headers(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+def save_headers(
+    link: Link, out_dir: Optional[str] = None, timeout: int = TIMEOUT
+) -> ArchiveResult:
     """Download site headers"""
 
     out_dir = Path(out_dir or link.link_dir)
     output_folder = out_dir.absolute()
-    output: ArchiveOutput = 'headers.json'
+    output: ArchiveOutput = "headers.json"
 
-    status = 'succeeded'
-    timer = TimedProgress(timeout, prefix='      ')
+    status = "succeeded"
+    timer = TimedProgress(timeout, prefix="      ")
 
     cmd = [
         CURL_BINARY,
         *CURL_ARGS,
-        '--head',
-        '--max-time', str(timeout),
-        *(['--user-agent', '{}'.format(CURL_USER_AGENT)] if CURL_USER_AGENT else []),
-        *([] if CHECK_SSL_VALIDITY else ['--insecure']),
+        "--head",
+        "--max-time",
+        str(timeout),
+        *(["--user-agent", "{}".format(CURL_USER_AGENT)] if CURL_USER_AGENT else []),
+        *([] if CHECK_SSL_VALIDITY else ["--insecure"]),
         link.url,
     ]
     try:
@@ -55,7 +61,7 @@ def save_headers(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) 
         output_folder.mkdir(exist_ok=True)
         atomic_write(str(output_folder / "headers.json"), json_headers)
     except (Exception, OSError) as err:
-        status = 'failed'
+        status = "failed"
         output = err
     finally:
         timer.end()

@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 from pathlib import Path
 from typing import Optional
@@ -19,41 +19,45 @@ from ..config import (
 from ..logging_util import TimedProgress
 
 
-
 @enforce_types
-def should_save_screenshot(link: Link, out_dir: Optional[Path]=None, overwrite: Optional[bool]=False) -> bool:
+def should_save_screenshot(
+    link: Link, out_dir: Optional[Path] = None, overwrite: Optional[bool] = False
+) -> bool:
     if is_static_file(link.url):
         return False
 
     out_dir = out_dir or Path(link.link_dir)
-    if not overwrite and (out_dir / 'screenshot.png').exists():
+    if not overwrite and (out_dir / "screenshot.png").exists():
         return False
 
     return SAVE_SCREENSHOT
 
+
 @enforce_types
-def save_screenshot(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+def save_screenshot(
+    link: Link, out_dir: Optional[Path] = None, timeout: int = TIMEOUT
+) -> ArchiveResult:
     """take screenshot of site using chrome --headless"""
-    
+
     out_dir = out_dir or Path(link.link_dir)
-    output: ArchiveOutput = 'screenshot.png'
+    output: ArchiveOutput = "screenshot.png"
     cmd = [
         *chrome_args(),
-        '--screenshot',
+        "--screenshot",
         link.url,
     ]
-    status = 'succeeded'
-    timer = TimedProgress(timeout, prefix='      ')
+    status = "succeeded"
+    timer = TimedProgress(timeout, prefix="      ")
     try:
         result = run(cmd, cwd=str(out_dir), timeout=timeout)
 
         if result.returncode:
             hints = (result.stderr or result.stdout).decode()
-            raise ArchiveError('Failed to save screenshot', hints)
+            raise ArchiveError("Failed to save screenshot", hints)
 
         chmod_file(output, cwd=str(out_dir))
     except Exception as err:
-        status = 'failed'
+        status = "failed"
         output = err
         chrome_cleanup()
     finally:

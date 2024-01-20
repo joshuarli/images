@@ -37,20 +37,19 @@ __all__ = ["encode", "decode", "normalize"]
 
 
 if PY3:
-    string_types = str,
+    string_types = (str,)
 else:
-    string_types = basestring,
+    string_types = (basestring,)
 
 # The encoded symbol space does not include I, L, O or U
-symbols = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+symbols = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 # These five symbols are exclusively for checksum values
-check_symbols = '*~$=U'
+check_symbols = "*~$=U"
 
 encode_symbols = dict((i, ch) for (i, ch) in enumerate(symbols + check_symbols))
 decode_symbols = dict((ch, i) for (i, ch) in enumerate(symbols + check_symbols))
-normalize_symbols = str.maketrans('IiLlOo', '111100')
-valid_symbols = re.compile('^[%s]+[%s]?$' % (symbols,
-                                             re.escape(check_symbols)))
+normalize_symbols = str.maketrans("IiLlOo", "111100")
+valid_symbols = re.compile("^[%s]+[%s]?$" % (symbols, re.escape(check_symbols)))
 
 base = len(symbols)
 check_base = len(symbols + check_symbols)
@@ -77,14 +76,14 @@ def encode(number, checksum=False, split=0):
     if split < 0:
         raise ValueError("split '%d' is not a positive integer" % split)
 
-    check_symbol = ''
+    check_symbol = ""
     if checksum:
         check_symbol = encode_symbols[number % check_base]
 
     if number == 0:
-        return '0' + check_symbol
+        return "0" + check_symbol
 
-    symbol_string = ''
+    symbol_string = ""
     while number > 0:
         remainder = number % base
         number //= base
@@ -94,8 +93,8 @@ def encode(number, checksum=False, split=0):
     if split:
         chunks = []
         for pos in range(0, len(symbol_string), split):
-            chunks.append(symbol_string[pos:pos + split])
-        symbol_string = '-'.join(chunks)
+            chunks.append(symbol_string[pos : pos + split])
+        symbol_string = "-".join(chunks)
 
     return symbol_string
 
@@ -124,8 +123,9 @@ def decode(symbol_string, checksum=False, strict=False):
         check_value = decode_symbols[check_symbol]
         modulo = number % check_base
         if check_value != modulo:
-            raise ValueError("invalid check symbol '%s' for string '%s'" %
-                             (check_symbol, symbol_string))
+            raise ValueError(
+                "invalid check symbol '%s' for string '%s'" % (check_symbol, symbol_string)
+            )
 
     return number
 
@@ -154,14 +154,13 @@ def normalize(symbol_string, strict=False):
     if isinstance(symbol_string, string_types):
         if not PY3:
             try:
-                symbol_string = symbol_string.encode('ascii')
+                symbol_string = symbol_string.encode("ascii")
             except UnicodeEncodeError:
                 raise ValueError("string should only contain ASCII characters")
     else:
-        raise TypeError("string is of invalid type %s" %
-                        symbol_string.__class__.__name__)
+        raise TypeError("string is of invalid type %s" % symbol_string.__class__.__name__)
 
-    norm_string = symbol_string.replace('-', '').translate(normalize_symbols).upper()
+    norm_string = symbol_string.replace("-", "").translate(normalize_symbols).upper()
 
     if not valid_symbols.match(norm_string):
         raise ValueError("string '%s' contains invalid characters" % norm_string)

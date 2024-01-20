@@ -1,4 +1,4 @@
-__package__ = 'archivebox.parsers'
+__package__ = "archivebox.parsers"
 
 
 import re
@@ -29,7 +29,9 @@ class HrefParser(HTMLParser):
 
 
 @enforce_types
-def parse_generic_html_export(html_file: IO[str], root_url: Optional[str]=None, **_kwargs) -> Iterable[Link]:
+def parse_generic_html_export(
+    html_file: IO[str], root_url: Optional[str] = None, **_kwargs
+) -> Iterable[Link]:
     """Parse Generic HTML for href tags and use only the url (support for title coming later)"""
 
     html_file.seek(0)
@@ -42,7 +44,7 @@ def parse_generic_html_export(html_file: IO[str], root_url: Optional[str]=None, 
             if root_url:
                 # resolve relative urls /home.html -> https://example.com/home.html
                 url = urljoin(root_url, url)
-            
+
             for archivable_url in re.findall(URL_REGEX, url):
                 yield Link(
                     url=htmldecode(archivable_url),
@@ -53,6 +55,6 @@ def parse_generic_html_export(html_file: IO[str], root_url: Optional[str]=None, 
                 )
 
 
-KEY = 'html'
-NAME = 'Generic HTML'
+KEY = "html"
+NAME = "Generic HTML"
 PARSER = parse_generic_html_export

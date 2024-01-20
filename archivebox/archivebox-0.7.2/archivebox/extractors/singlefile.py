@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 from pathlib import Path
 
@@ -24,19 +24,23 @@ from ..logging_util import TimedProgress
 
 
 @enforce_types
-def should_save_singlefile(link: Link, out_dir: Optional[Path]=None, overwrite: Optional[bool]=False) -> bool:
+def should_save_singlefile(
+    link: Link, out_dir: Optional[Path] = None, overwrite: Optional[bool] = False
+) -> bool:
     if is_static_file(link.url):
         return False
 
     out_dir = out_dir or Path(link.link_dir)
-    if not overwrite and (out_dir / 'singlefile.html').exists():
+    if not overwrite and (out_dir / "singlefile.html").exists():
         return False
 
     return SAVE_SINGLEFILE
 
 
 @enforce_types
-def save_singlefile(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+def save_singlefile(
+    link: Link, out_dir: Optional[Path] = None, timeout: int = TIMEOUT
+) -> ArchiveResult:
     """download full site using single-file"""
 
     out_dir = out_dir or Path(link.link_dir)
@@ -45,20 +49,21 @@ def save_singlefile(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEO
     browser_args = chrome_args(CHROME_TIMEOUT=0)
 
     # SingleFile CLI Docs: https://github.com/gildas-lormeau/SingleFile/tree/master/cli
-    browser_args = '--browser-args={}'.format(json.dumps(browser_args[1:]))
+    browser_args = "--browser-args={}".format(json.dumps(browser_args[1:]))
     options = [
         *SINGLEFILE_ARGS,
-        '--browser-executable-path={}'.format(CHROME_BINARY),
+        "--browser-executable-path={}".format(CHROME_BINARY),
         browser_args,
     ]
 
     # Deduplicate options (single-file doesn't like when you use the same option two times)
     #
     # NOTE: Options names that come first clobber conflicting names that come later
-    # My logic is SINGLEFILE_ARGS is the option that affects the singlefile command with most 
-    # specificity, therefore the user sets it with a lot intent, therefore it should take precedence 
+    # My logic is SINGLEFILE_ARGS is the option that affects the singlefile command with most
+    # specificity, therefore the user sets it with a lot intent, therefore it should take precedence
     # kind of like the ergonomic principle of lexical scope in programming languages.
     seen_option_names = []
+
     def test_seen(argument):
         option_name = argument.split("=")[0]
         if option_name in seen_option_names:
@@ -66,17 +71,18 @@ def save_singlefile(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEO
         else:
             seen_option_names.append(option_name)
             return True
+
     deduped_options = list(filter(test_seen, options))
 
     cmd = [
-        DEPENDENCIES['SINGLEFILE_BINARY']['path'],
+        DEPENDENCIES["SINGLEFILE_BINARY"]["path"],
         *deduped_options,
         link.url,
         output,
     ]
 
-    status = 'succeeded'
-    timer = TimedProgress(timeout, prefix='      ')
+    status = "succeeded"
+    timer = TimedProgress(timeout, prefix="      ")
     try:
         result = run(cmd, cwd=str(out_dir), timeout=timeout)
 
@@ -84,22 +90,22 @@ def save_singlefile(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEO
         #  "Downloaded: 76 files, 4.0M in 1.6s (2.52 MB/s)"
         output_tail = [
             line.strip()
-            for line in (result.stdout + result.stderr).decode().rsplit('\n', 3)[-3:]
+            for line in (result.stdout + result.stderr).decode().rsplit("\n", 3)[-3:]
             if line.strip()
         ]
         hints = (
-            'Got single-file response code: {}.'.format(result.returncode),
+            "Got single-file response code: {}.".format(result.returncode),
             *output_tail,
         )
 
         # Check for common failure cases
         if (result.returncode > 0) or not (out_dir / output).is_file():
-            raise ArchiveError('SingleFile was not able to archive the page', hints)
+            raise ArchiveError("SingleFile was not able to archive the page", hints)
         chmod_file(output, cwd=str(out_dir))
     except (Exception, OSError) as err:
-        status = 'failed'
+        status = "failed"
         # TODO: Make this prettier. This is necessary to run the command (escape JSON internal quotes).
-        cmd[2] = browser_args.replace('"', "\\\"")
+        cmd[2] = browser_args.replace('"', '\\"')
         output = err
     finally:
         timer.end()

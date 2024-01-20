@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 import os
 import sys
@@ -51,32 +51,34 @@ ShouldSaveFunction = Callable[[Link, Optional[Path], Optional[bool]], bool]
 SaveFunction = Callable[[Link, Optional[Path], int], ArchiveResult]
 ArchiveMethodEntry = tuple[str, ShouldSaveFunction, SaveFunction]
 
+
 def get_default_archive_methods() -> List[ArchiveMethodEntry]:
     return [
-        ('favicon', should_save_favicon, save_favicon),
-        ('headers', should_save_headers, save_headers),
-        ('singlefile', should_save_singlefile, save_singlefile),
-        ('pdf', should_save_pdf, save_pdf),
-        ('screenshot', should_save_screenshot, save_screenshot),
-        ('dom', should_save_dom, save_dom),
-        ('wget', should_save_wget, save_wget),
+        ("favicon", should_save_favicon, save_favicon),
+        ("headers", should_save_headers, save_headers),
+        ("singlefile", should_save_singlefile, save_singlefile),
+        ("pdf", should_save_pdf, save_pdf),
+        ("screenshot", should_save_screenshot, save_screenshot),
+        ("dom", should_save_dom, save_dom),
+        ("wget", should_save_wget, save_wget),
         # keep title, readability, and htmltotext below wget and singlefile, as they depend on them
-        ('title', should_save_title, save_title),
-        ('readability', should_save_readability, save_readability),
-        ('mercury', should_save_mercury, save_mercury),
-        ('htmltotext', should_save_htmltotext, save_htmltotext),
-        ('git', should_save_git, save_git),
-        ('media', should_save_media, save_media),
-        ('archive_org', should_save_archive_dot_org, save_archive_dot_org),
+        ("title", should_save_title, save_title),
+        ("readability", should_save_readability, save_readability),
+        ("mercury", should_save_mercury, save_mercury),
+        ("htmltotext", should_save_htmltotext, save_htmltotext),
+        ("git", should_save_git, save_git),
+        ("media", should_save_media, save_media),
+        ("archive_org", should_save_archive_dot_org, save_archive_dot_org),
     ]
 
+
 ARCHIVE_METHODS_INDEXING_PRECEDENCE = [
-    ('readability', 1),
-    ('mercury', 2),
-    ('htmltotext', 3),
-    ('singlefile', 4),
-    ('dom', 5),
-    ('wget', 6)
+    ("readability", 1),
+    ("mercury", 2),
+    ("htmltotext", 3),
+    ("singlefile", 4),
+    ("dom", 5),
+    ("wget", 6),
 ]
 
 
@@ -84,44 +86,45 @@ ARCHIVE_METHODS_INDEXING_PRECEDENCE = [
 def get_archive_methods_for_link(link: Link) -> Iterable[ArchiveMethodEntry]:
     DEFAULT_METHODS = get_default_archive_methods()
     allowed_methods = {
-        m for pat, methods in
-        SAVE_ALLOWLIST_PTN.items()
-        if pat.search(link.url)
-        for m in methods
-    } or { m[0] for m in DEFAULT_METHODS }
+        m for pat, methods in SAVE_ALLOWLIST_PTN.items() if pat.search(link.url) for m in methods
+    } or {m[0] for m in DEFAULT_METHODS}
     denied_methods = {
-        m for pat, methods in
-        SAVE_DENYLIST_PTN.items()
-        if pat.search(link.url)
-        for m in methods
+        m for pat, methods in SAVE_DENYLIST_PTN.items() if pat.search(link.url) for m in methods
     }
     allowed_methods -= denied_methods
 
     return (m for m in DEFAULT_METHODS if m[0] in allowed_methods)
+
 
 @enforce_types
 def ignore_methods(to_ignore: List[str]) -> Iterable[str]:
     ARCHIVE_METHODS = get_default_archive_methods()
     return [x[0] for x in ARCHIVE_METHODS if x[0] not in to_ignore]
 
+
 @enforce_types
-def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[str]]=None, out_dir: Optional[Path]=None) -> Link:
+def archive_link(
+    link: Link,
+    overwrite: bool = False,
+    methods: Optional[Iterable[str]] = None,
+    out_dir: Optional[Path] = None,
+) -> Link:
     """download the DOM, PDF, and a screenshot into a folder named after the link's timestamp"""
 
     # TODO: Remove when the input is changed to be a snapshot. Suboptimal approach.
     from core.models import Snapshot, ArchiveResult
+
     try:
-        snapshot = Snapshot.objects.get(url=link.url) # TODO: This will be unnecessary once everything is a snapshot
+        snapshot = Snapshot.objects.get(
+            url=link.url
+        )  # TODO: This will be unnecessary once everything is a snapshot
     except Snapshot.DoesNotExist:
         snapshot = write_link_to_sql_index(link)
 
     active_methods = get_archive_methods_for_link(link)
-    
+
     if methods:
-        active_methods = [
-            method for method in active_methods
-            if method[0] in methods
-        ]
+        active_methods = [method for method in active_methods if method[0] in methods]
 
     out_dir = out_dir or Path(link.link_dir)
     try:
@@ -133,7 +136,7 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
         write_link_details(link, out_dir=out_dir, skip_sql_index=False)
         log_link_archiving_started(link, out_dir, is_new)
         link = link.overwrite(updated=datetime.now(timezone.utc))
-        stats = {'skipped': 0, 'succeeded': 0, 'failed': 0}
+        stats = {"skipped": 0, "succeeded": 0, "failed": 0}
         start_ts = datetime.now(timezone.utc)
 
         for method_name, should_run, method_function in active_methods:
@@ -151,9 +154,17 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                     stats[result.status] += 1
                     log_archive_method_finished(result)
                     write_search_index(link=link, texts=result.index_texts)
-                    ArchiveResult.objects.create(snapshot=snapshot, extractor=method_name, cmd=result.cmd, cmd_version=result.cmd_version,
-                                                 output=result.output, pwd=result.pwd, start_ts=result.start_ts, end_ts=result.end_ts, status=result.status)
-
+                    ArchiveResult.objects.create(
+                        snapshot=snapshot,
+                        extractor=method_name,
+                        cmd=result.cmd,
+                        cmd_version=result.cmd_version,
+                        output=result.output,
+                        pwd=result.pwd,
+                        start_ts=result.start_ts,
+                        end_ts=result.end_ts,
+                        status=result.status,
+                    )
 
                     # bump the updated time on the main Snapshot here, this is critical
                     # to be able to cache summaries of the ArchiveResults for a given
@@ -163,7 +174,7 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                     snapshot.save()
                 else:
                     # print('{black}      X {}{reset}'.format(method_name, **ANSI))
-                    stats['skipped'] += 1
+                    stats["skipped"] += 1
             except Exception as e:
                 # Disabled until https://github.com/ArchiveBox/ArchiveBox/issues/984
                 # and https://github.com/ArchiveBox/ArchiveBox/issues/1014
@@ -176,22 +187,27 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
                 """
                 # Instead, use the kludgy workaround from
                 # https://github.com/ArchiveBox/ArchiveBox/issues/984#issuecomment-1150541627
-                with open(ERROR_LOG, "a", encoding='utf-8') as f:
-                    command = ' '.join(sys.argv)
-                    ts = datetime.now(timezone.utc).strftime('%Y-%m-%d__%H:%M:%S')
-                    f.write(("\n" + 'Exception in archive_methods.save_{}(Link(url={})) command={}; ts={}'.format(
-                        method_name,
-                        link.url,
-                        command,
-                        ts
-                    ) + "\n" + str(e) + "\n"))
-                    #f.write(f"\n> {command}; ts={ts} version={config['VERSION']} docker={config['IN_DOCKER']} is_tty={config['IS_TTY']}\n")
+                with open(ERROR_LOG, "a", encoding="utf-8") as f:
+                    command = " ".join(sys.argv)
+                    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d__%H:%M:%S")
+                    f.write(
+                        (
+                            "\n"
+                            + "Exception in archive_methods.save_{}(Link(url={})) command={}; ts={}".format(
+                                method_name, link.url, command, ts
+                            )
+                            + "\n"
+                            + str(e)
+                            + "\n"
+                        )
+                    )
+                    # f.write(f"\n> {command}; ts={ts} version={config['VERSION']} docker={config['IN_DOCKER']} is_tty={config['IS_TTY']}\n")
 
         # print('    ', stats)
 
         try:
-            latest_title = link.history['title'][-1].output.strip()
-            if latest_title and len(latest_title) >= len(link.title or ''):
+            latest_title = link.history["title"][-1].output.strip()
+            if latest_title and len(latest_title) >= len(link.title or ""):
                 link = link.overwrite(title=latest_title)
         except Exception:
             pass
@@ -208,14 +224,19 @@ def archive_link(link: Link, overwrite: bool=False, methods: Optional[Iterable[s
         raise
 
     except Exception as err:
-        print('    ! Failed to archive link: {}: {}'.format(err.__class__.__name__, err))
+        print("    ! Failed to archive link: {}: {}".format(err.__class__.__name__, err))
         raise
 
     return link
 
-@enforce_types
-def archive_links(all_links: Union[Iterable[Link], QuerySet], overwrite: bool=False, methods: Optional[Iterable[str]]=None, out_dir: Optional[Path]=None) -> List[Link]:
 
+@enforce_types
+def archive_links(
+    all_links: Union[Iterable[Link], QuerySet],
+    overwrite: bool = False,
+    methods: Optional[Iterable[str]] = None,
+    out_dir: Optional[Path] = None,
+) -> List[Link]:
     if type(all_links) is QuerySet:
         num_links: int = all_links.count()
         get_link = lambda x: x.as_link()
@@ -233,7 +254,12 @@ def archive_links(all_links: Union[Iterable[Link], QuerySet], overwrite: bool=Fa
         for link in all_links:
             idx += 1
             to_archive = get_link(link)
-            archive_link(to_archive, overwrite=overwrite, methods=methods, out_dir=Path(link.link_dir))
+            archive_link(
+                to_archive,
+                overwrite=overwrite,
+                methods=methods,
+                out_dir=Path(link.link_dir),
+            )
     except KeyboardInterrupt:
         log_archiving_paused(num_links, idx, link.timestamp)
         raise SystemExit(0)

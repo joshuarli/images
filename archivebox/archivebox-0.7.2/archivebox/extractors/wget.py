@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 import re
 from pathlib import Path
@@ -34,7 +34,9 @@ from ..logging_util import TimedProgress
 
 
 @enforce_types
-def should_save_wget(link: Link, out_dir: Optional[Path]=None, overwrite: Optional[bool]=False) -> bool:
+def should_save_wget(
+    link: Link, out_dir: Optional[Path] = None, overwrite: Optional[bool] = False
+) -> bool:
     output_path = wget_output_path(link)
     out_dir = out_dir or Path(link.link_dir)
     if not overwrite and output_path and (out_dir / output_path).exists():
@@ -44,7 +46,7 @@ def should_save_wget(link: Link, out_dir: Optional[Path]=None, overwrite: Option
 
 
 @enforce_types
-def save_wget(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+def save_wget(link: Link, out_dir: Optional[Path] = None, timeout: int = TIMEOUT) -> ArchiveResult:
     """download full site using wget"""
 
     out_dir = out_dir or link.link_dir
@@ -59,20 +61,20 @@ def save_wget(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEOUT) ->
         WGET_BINARY,
         # '--server-response',  # print headers for better error parsing
         *WGET_ARGS,
-        '--timeout={}'.format(timeout),
-        *(['--restrict-file-names={}'.format(RESTRICT_FILE_NAMES)] if RESTRICT_FILE_NAMES else []),
-        *(['--warc-file={}'.format(str(warc_path))] if SAVE_WARC else []),
-        *(['--page-requisites'] if SAVE_WGET_REQUISITES else []),
-        *(['--user-agent={}'.format(WGET_USER_AGENT)] if WGET_USER_AGENT else []),
-        *(['--load-cookies', str(COOKIES_FILE)] if COOKIES_FILE else []),
-        *(['--compression=auto'] if WGET_AUTO_COMPRESSION else []),
-        *([] if SAVE_WARC else ['--timestamping']),
-        *([] if CHECK_SSL_VALIDITY else ['--no-check-certificate', '--no-hsts']),
+        "--timeout={}".format(timeout),
+        *(["--restrict-file-names={}".format(RESTRICT_FILE_NAMES)] if RESTRICT_FILE_NAMES else []),
+        *(["--warc-file={}".format(str(warc_path))] if SAVE_WARC else []),
+        *(["--page-requisites"] if SAVE_WGET_REQUISITES else []),
+        *(["--user-agent={}".format(WGET_USER_AGENT)] if WGET_USER_AGENT else []),
+        *(["--load-cookies", str(COOKIES_FILE)] if COOKIES_FILE else []),
+        *(["--compression=auto"] if WGET_AUTO_COMPRESSION else []),
+        *([] if SAVE_WARC else ["--timestamping"]),
+        *([] if CHECK_SSL_VALIDITY else ["--no-check-certificate", "--no-hsts"]),
         link.url,
     ]
 
-    status = 'succeeded'
-    timer = TimedProgress(timeout, prefix='      ')
+    status = "succeeded"
+    timer = TimedProgress(timeout, prefix="      ")
     try:
         result = run(cmd, cwd=str(out_dir), timeout=timeout)
         output = wget_output_path(link)
@@ -81,36 +83,36 @@ def save_wget(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEOUT) ->
         #  "Downloaded: 76 files, 4.0M in 1.6s (2.52 MB/s)"
         output_tail = [
             line.strip()
-            for line in (result.stdout + result.stderr).decode().rsplit('\n', 3)[-3:]
+            for line in (result.stdout + result.stderr).decode().rsplit("\n", 3)[-3:]
             if line.strip()
         ]
         files_downloaded = (
-            int(output_tail[-1].strip().split(' ', 2)[1] or 0)
-            if 'Downloaded:' in output_tail[-1]
+            int(output_tail[-1].strip().split(" ", 2)[1] or 0)
+            if "Downloaded:" in output_tail[-1]
             else 0
         )
         hints = (
-            'Got wget response code: {}.'.format(result.returncode),
+            "Got wget response code: {}.".format(result.returncode),
             *output_tail,
         )
 
         # Check for common failure cases
         if (result.returncode > 0 and files_downloaded < 1) or output is None:
-            if b'403: Forbidden' in result.stderr:
-                raise ArchiveError('403 Forbidden (try changing WGET_USER_AGENT)', hints)
-            if b'404: Not Found' in result.stderr:
-                raise ArchiveError('404 Not Found', hints)
-            if b'ERROR 500: Internal Server Error' in result.stderr:
-                raise ArchiveError('500 Internal Server Error', hints)
-            raise ArchiveError('Wget failed or got an error from the server', hints)
-        
+            if b"403: Forbidden" in result.stderr:
+                raise ArchiveError("403 Forbidden (try changing WGET_USER_AGENT)", hints)
+            if b"404: Not Found" in result.stderr:
+                raise ArchiveError("404 Not Found", hints)
+            if b"ERROR 500: Internal Server Error" in result.stderr:
+                raise ArchiveError("500 Internal Server Error", hints)
+            raise ArchiveError("Wget failed or got an error from the server", hints)
+
         if (out_dir / output).exists():
             chmod_file(output, cwd=str(out_dir))
         else:
-            print(f'          {out_dir}/{output}')
-            raise ArchiveError('Failed to find wget output after running', hints)
+            print(f"          {out_dir}/{output}")
+            raise ArchiveError("Failed to find wget output after running", hints)
     except Exception as err:
-        status = 'failed'
+        status = "failed"
         output = err
     finally:
         timer.end()
@@ -132,7 +134,7 @@ def wget_output_path(link: Link) -> Optional[str]:
 
     See docs on wget --adjust-extension (-E)
     """
-    
+
     # Wget downloads can save in a number of different ways depending on the url:
     #    https://example.com
     #       > example.com/index.html
@@ -164,13 +166,14 @@ def wget_output_path(link: Link) -> Optional[str]:
     # and there's no way to get the computed output path from wget
     # in order to avoid having to reverse-engineer how they calculate it,
     # we just look in the output folder read the filename wget used from the filesystem
-    full_path = without_fragment(without_query(path(link.url))).strip('/')
+    full_path = without_fragment(without_query(path(link.url))).strip("/")
     search_dir = Path(link.link_dir) / domain(link.url).replace(":", "+") / urldecode(full_path)
     for _ in range(4):
         if search_dir.exists():
             if search_dir.is_dir():
                 html_files = [
-                    f for f in search_dir.iterdir()
+                    f
+                    for f in search_dir.iterdir()
                     if re.search(".+\\.[Ss]?[Hh][Tt][Mm][Ll]?$", str(f), re.I | re.M)
                 ]
                 if html_files:
@@ -180,7 +183,7 @@ def wget_output_path(link: Link) -> Optional[str]:
                 # e.g. /some/example/rss/all -> some RSS XML content)
                 #      /some/other/url.o4g   -> some binary unrecognized ext)
                 # test this with archivebox add --depth=1 https://getpocket.com/users/nikisweeting/feed/all
-                last_part_of_url = urldecode(full_path.rsplit('/', 1)[-1])
+                last_part_of_url = urldecode(full_path.rsplit("/", 1)[-1])
                 for file_present in search_dir.iterdir():
                     if file_present == last_part_of_url:
                         return str((search_dir / file_present).relative_to(link.link_dir))
@@ -193,10 +196,10 @@ def wget_output_path(link: Link) -> Optional[str]:
 
     # check for literally any file present that isnt an empty folder
     domain_dir = Path(domain(link.url).replace(":", "+"))
-    files_within = list((Path(link.link_dir) / domain_dir).glob('**/*.*'))
+    files_within = list((Path(link.link_dir) / domain_dir).glob("**/*.*"))
     if files_within:
         return str((domain_dir / files_within[-1]).relative_to(link.link_dir))
-    
+
     # fallback to just the domain dir
     search_dir = Path(link.link_dir) / domain(link.url).replace(":", "+")
     if search_dir.is_dir():

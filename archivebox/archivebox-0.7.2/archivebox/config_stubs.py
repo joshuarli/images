@@ -3,7 +3,6 @@ from typing import Optional, Dict, Union, Tuple, Callable, Pattern, Type, Any, L
 from mypy_extensions import TypedDict
 
 
-
 SimpleConfigValue = Union[str, bool, int, None, Pattern, Dict[str, Any]]
 SimpleConfigValueDict = Dict[str, SimpleConfigValue]
 SimpleConfigValueGetter = Callable[[], SimpleConfigValue]
@@ -12,6 +11,7 @@ ConfigValue = Union[SimpleConfigValue, SimpleConfigValueDict, SimpleConfigValueG
 
 class BaseConfig(TypedDict):
     pass
+
 
 class ConfigDict(BaseConfig, total=False):
     """
@@ -28,6 +28,7 @@ class ConfigDict(BaseConfig, total=False):
                 print(f'    {key}: {Type.__name__}')
         print()
     """
+
     IS_TTY: bool
     USE_COLOR: bool
     SHOW_PROGRESS: bool
@@ -105,10 +106,14 @@ class ConfigDict(BaseConfig, total=False):
 ConfigDefaultValueGetter = Callable[[ConfigDict], ConfigValue]
 ConfigDefaultValue = Union[ConfigValue, ConfigDefaultValueGetter]
 
-ConfigDefault = TypedDict('ConfigDefault', {
-    'default': ConfigDefaultValue,
-    'type': Optional[Type],
-    'aliases': Optional[Tuple[str, ...]],
-}, total=False)
+ConfigDefault = TypedDict(
+    "ConfigDefault",
+    {
+        "default": ConfigDefaultValue,
+        "type": Optional[Type],
+        "aliases": Optional[Tuple[str, ...]],
+    },
+    total=False,
+)
 
 ConfigDefaultDict = Dict[str, ConfigDefault]

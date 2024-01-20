@@ -90,9 +90,7 @@ class _TaggableManager(models.Manager):
         fk = self.through._meta.get_field(fieldname)
         query = {
             "%s__%s__in"
-            % (self.through.tag_relname(), fk.name): {
-                obj._get_pk_val() for obj in instances
-            }
+            % (self.through.tag_relname(), fk.name): {obj._get_pk_val() for obj in instances}
         }
         join_table = self.through._meta.db_table
         source_col = fk.column
@@ -101,13 +99,7 @@ class _TaggableManager(models.Manager):
         qs = (
             self.get_queryset(query)
             .using(db)
-            .extra(
-                select={
-                    "_prefetch_related_val": "{}.{}".format(
-                        qn(join_table), qn(source_col)
-                    )
-                }
-            )
+            .extra(select={"_prefetch_related_val": "{}.{}".format(qn(join_table), qn(source_col))})
         )
 
         if issubclass(self.through, GenericUUIDTaggedItemBase):
@@ -146,7 +138,6 @@ class _TaggableManager(models.Manager):
 
     @require_instance_manager
     def add(self, *tags, through_defaults=None, tag_kwargs=None, **kwargs):
-
         if tag_kwargs is None:
             tag_kwargs = {}
         db = router.db_for_write(self.through, instance=self.instance)
@@ -385,10 +376,7 @@ class _TaggableManager(models.Manager):
             remote_field = f.remote_field
             rel_model = remote_field.model
             objs = rel_model._default_manager.filter(
-                **{
-                    "%s__in"
-                    % remote_field.field_name: [r["content_object"] for r in qs]
-                }
+                **{"%s__in" % remote_field.field_name: [r["content_object"] for r in qs]}
             )
             actual_remote_field_name = f.target_field.get_attname()
             for obj in objs:
@@ -511,9 +499,7 @@ class TaggableManager(RelatedField):
                     self.remote_field.through = model
                     self.post_through_setup(cls)
 
-                lazy_related_operation(
-                    resolve_related_class, cls, self.through, field=self
-                )
+                lazy_related_operation(resolve_related_class, cls, self.through, field=self)
             else:
                 self.post_through_setup(cls)
 
@@ -521,14 +507,10 @@ class TaggableManager(RelatedField):
         return "ManyToManyField"
 
     def post_through_setup(self, cls):
-        self.use_gfk = self.through is None or issubclass(
-            self.through, CommonGenericTaggedItemBase
-        )
+        self.use_gfk = self.through is None or issubclass(self.through, CommonGenericTaggedItemBase)
 
         if not self.remote_field.model:
-            self.remote_field.model = self.through._meta.get_field(
-                "tag"
-            ).remote_field.model
+            self.remote_field.model = self.through._meta.get_field("tag").remote_field.model
 
         if self.use_gfk:
             tagged_items = GenericRelation(self.through)
@@ -539,8 +521,7 @@ class TaggableManager(RelatedField):
                 continue
             if rel.through == self.through:
                 raise ValueError(
-                    "You can't have two TaggableManagers with the"
-                    " same through model."
+                    "You can't have two TaggableManagers with the" " same through model."
                 )
 
     def save_form_data(self, instance, value):
@@ -558,9 +539,7 @@ class TaggableManager(RelatedField):
     def value_from_object(self, obj):
         if obj.pk is None:
             return []
-        qs = self.through.objects.select_related("tag").filter(
-            **self.through.lookup_kwargs(obj)
-        )
+        qs = self.through.objects.select_related("tag").filter(**self.through.lookup_kwargs(obj))
         return [ti.tag for ti in qs]
 
     def m2m_reverse_name(self):
@@ -595,23 +574,15 @@ class TaggableManager(RelatedField):
                 join1infos = linkfield1.get_reverse_path_info()
                 join2infos = linkfield2.get_path_info()
             else:
-                join1infos = linkfield1.get_reverse_path_info(
-                    filtered_relation=filtered_relation
-                )
-                join2infos = linkfield2.get_path_info(
-                    filtered_relation=filtered_relation
-                )
+                join1infos = linkfield1.get_reverse_path_info(filtered_relation=filtered_relation)
+                join2infos = linkfield2.get_path_info(filtered_relation=filtered_relation)
         else:
             if VERSION < (2, 0):
                 join1infos = linkfield2.get_reverse_path_info()
                 join2infos = linkfield1.get_path_info()
             else:
-                join1infos = linkfield2.get_reverse_path_info(
-                    filtered_relation=filtered_relation
-                )
-                join2infos = linkfield1.get_path_info(
-                    filtered_relation=filtered_relation
-                )
+                join1infos = linkfield2.get_reverse_path_info(filtered_relation=filtered_relation)
+                join2infos = linkfield1.get_path_info(filtered_relation=filtered_relation)
         pathinfos.extend(join1infos)
         pathinfos.extend(join2infos)
         return pathinfos
@@ -646,19 +617,13 @@ class TaggableManager(RelatedField):
                         filtered_relation,
                     )
                 ]
-                join2infos = linkfield.get_path_info(
-                    filtered_relation=filtered_relation
-                )
+                join2infos = linkfield.get_path_info(filtered_relation=filtered_relation)
         else:
             if VERSION < (2, 0):
                 join1infos = linkfield.get_reverse_path_info()
-                join2infos = [
-                    PathInfo(opts, self.model._meta, [from_field], self, True, False)
-                ]
+                join2infos = [PathInfo(opts, self.model._meta, [from_field], self, True, False)]
             else:
-                join1infos = linkfield.get_reverse_path_info(
-                    filtered_relation=filtered_relation
-                )
+                join1infos = linkfield.get_reverse_path_info(filtered_relation=filtered_relation)
                 join2infos = [
                     PathInfo(
                         opts,
@@ -676,23 +641,15 @@ class TaggableManager(RelatedField):
 
     def get_path_info(self, filtered_relation=None):
         if self.use_gfk:
-            return self._get_gfk_case_path_info(
-                direct=True, filtered_relation=filtered_relation
-            )
+            return self._get_gfk_case_path_info(direct=True, filtered_relation=filtered_relation)
         else:
-            return self._get_mm_case_path_info(
-                direct=True, filtered_relation=filtered_relation
-            )
+            return self._get_mm_case_path_info(direct=True, filtered_relation=filtered_relation)
 
     def get_reverse_path_info(self, filtered_relation=None):
         if self.use_gfk:
-            return self._get_gfk_case_path_info(
-                direct=False, filtered_relation=filtered_relation
-            )
+            return self._get_gfk_case_path_info(direct=False, filtered_relation=filtered_relation)
         else:
-            return self._get_mm_case_path_info(
-                direct=False, filtered_relation=filtered_relation
-            )
+            return self._get_mm_case_path_info(direct=False, filtered_relation=filtered_relation)
 
     def get_joining_columns(self, reverse_join=False):
         if reverse_join:

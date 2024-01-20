@@ -36,10 +36,11 @@ class ReadwiseReaderAPI:
             params={
                 "location": "archive",
                 "pageCursor": self.cursor,
-            }
+            },
         )
         response.raise_for_status()
         return response
+
 
 def get_readwise_reader_articles(api: ReadwiseReaderAPI):
     response = api.get_archive()
@@ -48,16 +49,15 @@ def get_readwise_reader_articles(api: ReadwiseReaderAPI):
 
     yield from articles
 
-
-    if body['nextPageCursor']:
+    if body["nextPageCursor"]:
         api.cursor = body["nextPageCursor"]
         yield from get_readwise_reader_articles(api)
 
 
 def link_from_article(article: dict, sources: list):
-    url: str = article['source_url']
+    url: str = article["source_url"]
     title = article["title"] or url
-    timestamp = datetime.fromisoformat(article['updated_at']).timestamp()
+    timestamp = datetime.fromisoformat(article["updated_at"]).timestamp()
 
     return Link(
         url=url,
@@ -91,8 +91,6 @@ def read_cursor(username: str) -> Optional[str]:
     config_file.read(API_DB_PATH)
 
     return config_file.get(username, "since", fallback=None)
-
-
 
 
 @enforce_types

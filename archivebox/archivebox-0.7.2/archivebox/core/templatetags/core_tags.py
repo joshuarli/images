@@ -7,17 +7,20 @@ from typing import Union
 
 register = template.Library()
 
-@register.filter(name='split')
-def split(value, separator: str=','):
-    return (value or '').split(separator)
+
+@register.filter(name="split")
+def split(value, separator: str = ","):
+    return (value or "").split(separator)
+
 
 @register.filter
 def file_size(num_bytes: Union[int, float]) -> str:
-    for count in ['Bytes','KB','MB','GB']:
+    for count in ["Bytes", "KB", "MB", "GB"]:
         if num_bytes > -1024.0 and num_bytes < 1024.0:
-            return '%3.1f %s' % (num_bytes, count)
+            return "%3.1f %s" % (num_bytes, count)
         num_bytes /= 1024.0
-    return '%3.1f %s' % (num_bytes, 'TB')
+    return "%3.1f %s" % (num_bytes, "TB")
+
 
 def result_list(cl):
     """
@@ -25,16 +28,18 @@ def result_list(cl):
     """
     num_sorted_fields = 0
     return {
-        'cl': cl,
-        'num_sorted_fields': num_sorted_fields,
-        'results': cl.result_list,
+        "cl": cl,
+        "num_sorted_fields": num_sorted_fields,
+        "results": cl.result_list,
     }
 
-@register.tag(name='snapshots_grid')
+
+@register.tag(name="snapshots_grid")
 def result_list_tag(parser, token):
     return InclusionAdminNode(
-        parser, token,
+        parser,
+        token,
         func=result_list,
-        template_name='snapshots_grid.html',
+        template_name="snapshots_grid.html",
         takes_context=False,
     )

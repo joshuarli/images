@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 from html.parser import HTMLParser
 import io
@@ -19,10 +19,17 @@ from ..util import (
 )
 from .title import get_html
 
+
 class HTMLTextExtractor(HTMLParser):
     TEXT_ATTRS = [
-        "alt", "cite", "href", "label",
-        "list", "placeholder", "title", "value"
+        "alt",
+        "cite",
+        "href",
+        "label",
+        "list",
+        "placeholder",
+        "title",
+        "value",
     ]
     NOTEXT_TAGS = ["script", "style", "template"]
     NOTEXT_HREF = ["data:", "javascript:", "#"]
@@ -97,39 +104,43 @@ class HTMLTextExtractor(HTMLParser):
             if spaces_rstripped:
                 # Add back a single space if 1 or more
                 # whitespace characters were stripped
-                self.output.write(' ')
+                self.output.write(" ")
 
     def __str__(self):
         return self.output.getvalue()
 
 
 @enforce_types
-def should_save_htmltotext(link: Link, out_dir: Optional[Path]=None, overwrite: Optional[bool]=False) -> bool:
+def should_save_htmltotext(
+    link: Link, out_dir: Optional[Path] = None, overwrite: Optional[bool] = False
+) -> bool:
     if is_static_file(link.url):
         return False
 
     out_dir = out_dir or Path(link.link_dir)
-    if not overwrite and (out_dir / 'htmltotext.txt').exists():
+    if not overwrite and (out_dir / "htmltotext.txt").exists():
         return False
 
     return SAVE_HTMLTOTEXT
 
 
 @enforce_types
-def save_htmltotext(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+def save_htmltotext(
+    link: Link, out_dir: Optional[Path] = None, timeout: int = TIMEOUT
+) -> ArchiveResult:
     """extract search-indexing-friendly text from an HTML document"""
 
     out_dir = Path(out_dir or link.link_dir)
     output = "htmltotext.txt"
 
-    timer = TimedProgress(timeout, prefix='      ')
+    timer = TimedProgress(timeout, prefix="      ")
     extracted_text = None
     try:
         extractor = HTMLTextExtractor()
         document = get_html(link, out_dir)
 
         if not document:
-            raise ArchiveError('htmltotext could not find HTML to parse for article text')
+            raise ArchiveError("htmltotext could not find HTML to parse for article text")
 
         extractor.feed(document)
         extractor.close()
@@ -137,9 +148,9 @@ def save_htmltotext(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEO
 
         atomic_write(str(out_dir / output), extracted_text)
     except (Exception, OSError) as err:
-        status = 'failed'
+        status = "failed"
         output = err
-        cmd = ['(internal) archivebox.extractors.htmltotext', './{singlefile,dom}.html']
+        cmd = ["(internal) archivebox.extractors.htmltotext", "./{singlefile,dom}.html"]
     finally:
         timer.end()
 
@@ -150,5 +161,5 @@ def save_htmltotext(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEO
         output=output,
         status=status,
         index_texts=[extracted_text] if extracted_text else [],
-        **timer.stats,  
+        **timer.stats,
     )

@@ -1,4 +1,4 @@
-__package__ = 'archivebox.parsers'
+__package__ = "archivebox.parsers"
 
 
 from typing import IO, Iterable
@@ -19,13 +19,13 @@ def parse_medium_rss_export(rss_file: IO[str], **_kwargs) -> Iterable[Link]:
 
     rss_file.seek(0)
     root = ElementTree.parse(rss_file).getroot()
-    items = root.find("channel").findall("item")                        # type: ignore
+    items = root.find("channel").findall("item")  # type: ignore
     for item in items:
-        url = item.find("link").text                                    # type: ignore
-        title = item.find("title").text.strip()                         # type: ignore
-        ts_str = item.find("pubDate").text                              # type: ignore
-        time = datetime.strptime(ts_str, "%a, %d %b %Y %H:%M:%S %Z")    # type: ignore
-        
+        url = item.find("link").text  # type: ignore
+        title = item.find("title").text.strip()  # type: ignore
+        ts_str = item.find("pubDate").text  # type: ignore
+        time = datetime.strptime(ts_str, "%a, %d %b %Y %H:%M:%S %Z")  # type: ignore
+
         yield Link(
             url=htmldecode(url),
             timestamp=str(time.timestamp()),
@@ -35,6 +35,6 @@ def parse_medium_rss_export(rss_file: IO[str], **_kwargs) -> Iterable[Link]:
         )
 
 
-KEY = 'medium_rss'
-NAME = 'Medium RSS'
+KEY = "medium_rss"
+NAME = "Medium RSS"
 PARSER = parse_medium_rss_export

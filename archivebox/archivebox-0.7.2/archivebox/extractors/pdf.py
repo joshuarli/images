@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 from pathlib import Path
 from typing import Optional
@@ -20,45 +20,46 @@ from ..logging_util import TimedProgress
 
 
 @enforce_types
-def should_save_pdf(link: Link, out_dir: Optional[Path]=None, overwrite: Optional[bool]=False) -> bool:
+def should_save_pdf(
+    link: Link, out_dir: Optional[Path] = None, overwrite: Optional[bool] = False
+) -> bool:
     if is_static_file(link.url):
         return False
 
     out_dir = out_dir or Path(link.link_dir)
-    if not overwrite and (out_dir / 'output.pdf').exists():
+    if not overwrite and (out_dir / "output.pdf").exists():
         return False
 
     return SAVE_PDF
 
 
 @enforce_types
-def save_pdf(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+def save_pdf(link: Link, out_dir: Optional[Path] = None, timeout: int = TIMEOUT) -> ArchiveResult:
     """print PDF of site to file using chrome --headless"""
 
     out_dir = out_dir or Path(link.link_dir)
-    output: ArchiveOutput = 'output.pdf'
+    output: ArchiveOutput = "output.pdf"
     cmd = [
         *chrome_args(),
-        '--print-to-pdf',
+        "--print-to-pdf",
         link.url,
     ]
-    status = 'succeeded'
-    timer = TimedProgress(timeout, prefix='      ')
+    status = "succeeded"
+    timer = TimedProgress(timeout, prefix="      ")
     try:
         result = run(cmd, cwd=str(out_dir), timeout=timeout)
 
         if result.returncode:
             hints = (result.stderr or result.stdout).decode()
-            raise ArchiveError('Failed to save PDF', hints)
-        
-        chmod_file('output.pdf', cwd=str(out_dir))
+            raise ArchiveError("Failed to save PDF", hints)
+
+        chmod_file("output.pdf", cwd=str(out_dir))
     except Exception as err:
-        status = 'failed'
+        status = "failed"
         output = err
         chrome_cleanup()
     finally:
         timer.end()
-
 
     return ArchiveResult(
         cmd=cmd,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__package__ = 'archivebox.cli'
+__package__ = "archivebox.cli"
 
 
 import os
@@ -12,22 +12,19 @@ from pathlib import Path
 from contextlib import contextmanager
 
 TEST_CONFIG = {
-    'USE_COLOR': 'False',
-    'SHOW_PROGRESS': 'False',
-
-    'OUTPUT_DIR': 'data.tests',
-    
-    'SAVE_ARCHIVE_DOT_ORG': 'False',
-    'SAVE_TITLE': 'False',
-    
-    'USE_CURL': 'False',
-    'USE_WGET': 'False',
-    'USE_GIT': 'False',
-    'USE_CHROME': 'False',
-    'USE_YOUTUBEDL': 'False',
+    "USE_COLOR": "False",
+    "SHOW_PROGRESS": "False",
+    "OUTPUT_DIR": "data.tests",
+    "SAVE_ARCHIVE_DOT_ORG": "False",
+    "SAVE_TITLE": "False",
+    "USE_CURL": "False",
+    "USE_WGET": "False",
+    "USE_GIT": "False",
+    "USE_CHROME": "False",
+    "USE_YOUTUBEDL": "False",
 }
 
-OUTPUT_DIR = 'data.tests'
+OUTPUT_DIR = "data.tests"
 os.environ.update(TEST_CONFIG)
 
 from ..main import init
@@ -46,7 +43,7 @@ from . import (
 
 HIDE_CLI_OUTPUT = True
 
-test_urls = '''
+test_urls = """
 https://example1.com/what/is/happening.html?what=1#how-about-this=1
 https://example2.com/what/is/happening/?what=1#how-about-this=1
 HTtpS://example3.com/what/is/happening/?what=1#how-about-this=1f
@@ -63,7 +60,7 @@ sdflkf[what](https://subb.example12.com/who/what.php?whoami=1#whatami=2)?am=hi
 example13.bada
 and example14.badb
 <or>htt://example15.badc</that>
-'''
+"""
 
 stdout = sys.stdout
 stderr = sys.stderr
@@ -75,8 +72,8 @@ def output_hidden(show_failing=True):
         yield
         return
 
-    sys.stdout = open('stdout.txt', 'w+', encoding='utf-8')
-    sys.stderr = open('stderr.txt', 'w+', encoding='utf-8')
+    sys.stdout = open("stdout.txt", "w+", encoding="utf-8")
+    sys.stderr = open("stderr.txt", "w+", encoding="utf-8")
     try:
         yield
         sys.stdout.close()
@@ -89,14 +86,14 @@ def output_hidden(show_failing=True):
         sys.stdout = stdout
         sys.stderr = stderr
         if show_failing:
-            with open('stdout.txt', 'r', encoding='utf-8') as f:
+            with open("stdout.txt", "r", encoding="utf-8") as f:
                 print(f.read())
-            with open('stderr.txt', 'r', encoding='utf-8') as f:
+            with open("stderr.txt", "r", encoding="utf-8") as f:
                 print(f.read())
         raise
     finally:
-        os.remove('stdout.txt')
-        os.remove('stderr.txt')
+        os.remove("stdout.txt")
+        os.remove("stderr.txt")
 
 
 class TestInit(unittest.TestCase):
@@ -116,13 +113,13 @@ class TestInit(unittest.TestCase):
         assert len(load_main_index(out_dir=OUTPUT_DIR)) == 0
 
     def test_conflicting_init(self):
-        with open(Path(OUTPUT_DIR) / 'test_conflict.txt', 'w+', encoding='utf-8') as f:
-            f.write('test')
+        with open(Path(OUTPUT_DIR) / "test_conflict.txt", "w+", encoding="utf-8") as f:
+            f.write("test")
 
         try:
             with output_hidden(show_failing=False):
                 archivebox_init.main([])
-            assert False, 'Init should have exited with an exception'
+            assert False, "Init should have exited with an exception"
         except SystemExit:
             pass
 
@@ -131,7 +128,7 @@ class TestInit(unittest.TestCase):
         assert not (Path(OUTPUT_DIR) / HTML_INDEX_FILENAME).exists()
         try:
             load_main_index(out_dir=OUTPUT_DIR)
-            assert False, 'load_main_index should raise an exception when no index is present'
+            assert False, "load_main_index should raise an exception when no index is present"
         except Exception:
             pass
 
@@ -154,14 +151,14 @@ class TestAdd(unittest.TestCase):
 
     def test_add_arg_url(self):
         with output_hidden():
-            archivebox_add.main(['https://getpocket.com/users/nikisweeting/feed/all'])
+            archivebox_add.main(["https://getpocket.com/users/nikisweeting/feed/all"])
 
         all_links = load_main_index(out_dir=OUTPUT_DIR)
         assert len(all_links) == 30
 
     def test_add_arg_file(self):
-        test_file = Path(OUTPUT_DIR) / 'test.txt'
-        with open(test_file, 'w+', encoding='utf') as f:
+        test_file = Path(OUTPUT_DIR) / "test.txt"
+        with open(test_file, "w+", encoding="utf") as f:
             f.write(test_urls)
 
         with output_hidden():
@@ -187,26 +184,40 @@ class TestRemove(unittest.TestCase):
             archivebox_add.main([], stdin=test_urls)
 
     # def tearDown(self):
-        # shutil.rmtree(OUTPUT_DIR, ignore_errors=True)
-
+    # shutil.rmtree(OUTPUT_DIR, ignore_errors=True)
 
     def test_remove_exact(self):
         with output_hidden():
-            archivebox_remove.main(['--yes', '--delete', 'https://example5.com/'])
+            archivebox_remove.main(["--yes", "--delete", "https://example5.com/"])
 
         all_links = load_main_index(out_dir=OUTPUT_DIR)
         assert len(all_links) == 11
 
     def test_remove_regex(self):
         with output_hidden():
-            archivebox_remove.main(['--yes', '--delete', '--filter-type=regex', r'http(s)?:\/\/(.+\.)?(example\d\.com)'])
+            archivebox_remove.main(
+                [
+                    "--yes",
+                    "--delete",
+                    "--filter-type=regex",
+                    r"http(s)?:\/\/(.+\.)?(example\d\.com)",
+                ]
+            )
 
         all_links = load_main_index(out_dir=OUTPUT_DIR)
         assert len(all_links) == 4
 
     def test_remove_domain(self):
         with output_hidden():
-            archivebox_remove.main(['--yes', '--delete', '--filter-type=domain', 'example5.com', 'example6.com'])
+            archivebox_remove.main(
+                [
+                    "--yes",
+                    "--delete",
+                    "--filter-type=domain",
+                    "example5.com",
+                    "example6.com",
+                ]
+            )
 
         all_links = load_main_index(out_dir=OUTPUT_DIR)
         assert len(all_links) == 10
@@ -214,14 +225,14 @@ class TestRemove(unittest.TestCase):
     def test_remove_none(self):
         try:
             with output_hidden(show_failing=False):
-                archivebox_remove.main(['--yes', '--delete', 'https://doesntexist.com'])
-            assert False, 'Should raise if no URLs match'
+                archivebox_remove.main(["--yes", "--delete", "https://doesntexist.com"])
+            assert False, "Should raise if no URLs match"
         except Exception:
             pass
 
 
-if __name__ == '__main__':
-    if '--verbose' in sys.argv or '-v' in sys.argv:
+if __name__ == "__main__":
+    if "--verbose" in sys.argv or "-v" in sys.argv:
         HIDE_CLI_OUTPUT = False
-    
+
     unittest.main()

@@ -1,4 +1,4 @@
-__package__ = 'archivebox.core'
+__package__ = "archivebox.core"
 
 
 import uuid
@@ -13,26 +13,30 @@ from django.utils.text import slugify
 from django.core.cache import cache
 from django.urls import reverse
 from django.db.models import Case, When, Value, IntegerField
-from django.contrib.auth.models import User   # noqa
+from django.contrib.auth.models import User  # noqa
 
 from ..config import ARCHIVE_DIR, ARCHIVE_DIR_NAME
 from ..system import get_dir_size
 from ..util import parse_date, base_url, hashurl
 from ..index.schema import Link
 from ..index.html import snapshot_icons
-from ..extractors import get_default_archive_methods, ARCHIVE_METHODS_INDEXING_PRECEDENCE
+from ..extractors import (
+    get_default_archive_methods,
+    ARCHIVE_METHODS_INDEXING_PRECEDENCE,
+)
 
 EXTRACTORS = [(extractor[0], extractor[0]) for extractor in get_default_archive_methods()]
 STATUS_CHOICES = [
     ("succeeded", "succeeded"),
     ("failed", "failed"),
-    ("skipped", "skipped")
+    ("skipped", "skipped"),
 ]
 
 try:
     JSONField = models.JSONField
 except AttributeError:
     import jsonfield
+
     JSONField = jsonfield.JSONField
 
 
@@ -40,13 +44,13 @@ class Tag(models.Model):
     """
     Based on django-taggit model
     """
-    id = models.AutoField(primary_key=True, serialize=False, verbose_name='ID')
+
+    id = models.AutoField(primary_key=True, serialize=False, verbose_name="ID")
 
     name = models.CharField(unique=True, blank=False, max_length=100)
 
     # slug is autoset on save from name, never set it manually
     slug = models.SlugField(unique=True, blank=True, max_length=100)
-
 
     class Meta:
         verbose_name = "Tag"
@@ -79,7 +83,7 @@ class Tag(models.Model):
                 if slug not in slugs:
                     self.slug = slug
                     return super().save(*args, **kwargs)
-                i = 1 if i is None else i+1
+                i = 1 if i is None else i + 1
         else:
             return super().save(*args, **kwargs)
 
@@ -96,15 +100,15 @@ class Snapshot(models.Model):
     updated = models.DateTimeField(auto_now=True, blank=True, null=True, db_index=True)
     tags = models.ManyToManyField(Tag, blank=True)
 
-    keys = ('url', 'timestamp', 'title', 'tags', 'updated')
+    keys = ("url", "timestamp", "title", "tags", "updated")
 
     def __repr__(self) -> str:
-        title = self.title or '-'
-        return f'[{self.timestamp}] {self.url[:64]} ({title[:64]})'
+        title = self.title or "-"
+        return f"[{self.timestamp}] {self.url[:64]} ({title[:64]})"
 
     def __str__(self) -> str:
-        title = self.title or '-'
-        return f'[{self.timestamp}] {self.url[:64]} ({title[:64]})'
+        title = self.title or "-"
+        return f"[{self.timestamp}] {self.url[:64]} ({title[:64]})"
 
     @classmethod
     def from_json(cls, info: dict):
@@ -113,22 +117,19 @@ class Snapshot(models.Model):
 
     def as_json(self, *args) -> dict:
         args = args or self.keys
-        return {
-            key: getattr(self, key)
-            if key != 'tags' else self.tags_str()
-            for key in args
-        }
+        return {key: getattr(self, key) if key != "tags" else self.tags_str() for key in args}
 
     def as_link(self) -> Link:
         return Link.from_json(self.as_json())
 
     def as_link_with_details(self) -> Link:
         from ..index import load_link_details
+
         return load_link_details(self.as_link())
 
     def tags_str(self, nocache=True) -> str:
-        cache_key = f'{self.id}-{(self.updated or self.added).timestamp()}-tags'
-        calc_tags_str = lambda: ','.join(self.tags.order_by('name').values_list('name', flat=True))
+        cache_key = f"{self.id}-{(self.updated or self.added).timestamp()}-tags"
+        calc_tags_str = lambda: ",".join(self.tags.order_by("name").values_list("name", flat=True))
         if nocache:
             tags_str = calc_tags_str()
             cache.set(cache_key, tags_str)
@@ -141,6 +142,7 @@ class Snapshot(models.Model):
     @cached_property
     def extension(self) -> str:
         from ..util import extension
+
         return extension(self.url)
 
     @cached_property
@@ -158,7 +160,7 @@ class Snapshot(models.Model):
 
     @cached_property
     def num_outputs(self):
-        return self.archiveresult_set.filter(status='succeeded').count()
+        return self.archiveresult_set.filter(status="succeeded").count()
 
     @cached_property
     def url_hash(self):
@@ -174,11 +176,11 @@ class Snapshot(models.Model):
 
     @cached_property
     def archive_path(self):
-        return '{}/{}'.format(ARCHIVE_DIR_NAME, self.timestamp)
+        return "{}/{}".format(ARCHIVE_DIR_NAME, self.timestamp)
 
     @cached_property
     def archive_size(self):
-        cache_key = f'{str(self.id)[:12]}-{(self.updated or self.added).timestamp()}-size'
+        cache_key = f"{str(self.id)[:12]}-{(self.updated or self.added).timestamp()}-size"
 
         def calc_dir_size():
             try:
@@ -190,25 +192,28 @@ class Snapshot(models.Model):
 
     @cached_property
     def thumbnail_url(self) -> Optional[str]:
-        result = self.archiveresult_set.filter(
-            extractor='screenshot',
-            status='succeeded'
-        ).only('output').last()
+        result = (
+            self.archiveresult_set.filter(extractor="screenshot", status="succeeded")
+            .only("output")
+            .last()
+        )
         if result:
-            return reverse('Snapshot', args=[f'{str(self.timestamp)}/{result.output}'])
+            return reverse("Snapshot", args=[f"{str(self.timestamp)}/{result.output}"])
         return None
 
     @cached_property
     def headers(self) -> Optional[dict]:
         try:
-            return json.loads((Path(self.link_dir) / 'headers.json').read_text(encoding='utf-8').strip())
+            return json.loads(
+                (Path(self.link_dir) / "headers.json").read_text(encoding="utf-8").strip()
+            )
         except Exception:
             pass
         return None
 
     @cached_property
     def status_code(self) -> Optional[str]:
-        return self.headers and self.headers.get('Status-Code')
+        return self.headers and self.headers.get("Status-Code")
 
     @cached_property
     def history(self) -> dict:
@@ -218,14 +223,14 @@ class Snapshot(models.Model):
     @cached_property
     def latest_title(self) -> Optional[str]:
         if self.title:
-            return self.title   # whoopdedoo that was easy
-        
+            return self.title  # whoopdedoo that was easy
+
         try:
             # take longest successful title from ArchiveResult db history
             return sorted(
-                self.archiveresult_set\
-                    .filter(extractor='title', status='succeeded', output__isnull=False)\
-                    .values_list('output', flat=True),
+                self.archiveresult_set.filter(
+                    extractor="title", status="succeeded", output__isnull=False
+                ).values_list("output", flat=True),
                 key=lambda r: len(r),
             )[-1]
         except IndexError:
@@ -236,8 +241,8 @@ class Snapshot(models.Model):
             return sorted(
                 (
                     result.output.strip()
-                    for result in self.history['title']
-                    if result.status == 'succeeded' and result.output.strip()
+                    for result in self.history["title"]
+                    if result.status == "succeeded" and result.output.strip()
                 ),
                 key=lambda r: len(r),
             )[-1]
@@ -246,7 +251,7 @@ class Snapshot(models.Model):
 
         return None
 
-    def save_tags(self, tags: List[str]=()) -> None:
+    def save_tags(self, tags: List[str] = ()) -> None:
         tags_id = []
         for tag in tags:
             if tag.strip():
@@ -257,17 +262,24 @@ class Snapshot(models.Model):
 
 class ArchiveResultManager(models.Manager):
     def indexable(self, sorted: bool = True):
-        INDEXABLE_METHODS = [ r[0] for r in ARCHIVE_METHODS_INDEXING_PRECEDENCE ]
-        qs = self.get_queryset().filter(extractor__in=INDEXABLE_METHODS,status='succeeded')
+        INDEXABLE_METHODS = [r[0] for r in ARCHIVE_METHODS_INDEXING_PRECEDENCE]
+        qs = self.get_queryset().filter(extractor__in=INDEXABLE_METHODS, status="succeeded")
 
         if sorted:
-            precedence = [ When(extractor=method, then=Value(precedence)) for method, precedence in ARCHIVE_METHODS_INDEXING_PRECEDENCE ]
-            qs = qs.annotate(indexing_precedence=Case(*precedence, default=Value(1000),output_field=IntegerField())).order_by('indexing_precedence')
+            precedence = [
+                When(extractor=method, then=Value(precedence))
+                for method, precedence in ARCHIVE_METHODS_INDEXING_PRECEDENCE
+            ]
+            qs = qs.annotate(
+                indexing_precedence=Case(
+                    *precedence, default=Value(1000), output_field=IntegerField()
+                )
+            ).order_by("indexing_precedence")
         return qs
 
 
 class ArchiveResult(models.Model):
-    id = models.AutoField(primary_key=True, serialize=False, verbose_name='ID')
+    id = models.AutoField(primary_key=True, serialize=False, verbose_name="ID")
     uuid = models.UUIDField(default=uuid.uuid4, editable=False)
 
     snapshot = models.ForeignKey(Snapshot, on_delete=models.CASCADE)

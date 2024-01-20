@@ -36,12 +36,9 @@ class TagList(list):
 class TagListSerializerField(serializers.Field):
     child = serializers.CharField()
     default_error_messages = {
-        "not_a_list": gettext_lazy(
-            'Expected a list of items but got type "{input_type}".'
-        ),
+        "not_a_list": gettext_lazy('Expected a list of items but got type "{input_type}".'),
         "invalid_json": gettext_lazy(
-            "Invalid json list. A tag list submitted in string"
-            " form must be valid json."
+            "Invalid json list. A tag list submitted in string" " form must be valid json."
         ),
         "not_a_str": gettext_lazy("All list items must be of string type."),
     }

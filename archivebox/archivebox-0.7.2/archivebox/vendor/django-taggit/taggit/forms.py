@@ -27,9 +27,7 @@ class TagField(forms.CharField):
         try:
             return parse_tags(value)
         except ValueError:
-            raise forms.ValidationError(
-                _("Please provide a comma-separated list of tags.")
-            )
+            raise forms.ValidationError(_("Please provide a comma-separated list of tags."))
 
     def has_changed(self, initial_value, data_value):
         # Always return False if the field is disabled since self.bound_data

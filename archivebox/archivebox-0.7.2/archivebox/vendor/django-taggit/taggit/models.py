@@ -32,9 +32,7 @@ class TagBase(models.Model):
     def save(self, *args, **kwargs):
         if self._state.adding and not self.slug:
             self.slug = self.slugify(self.name)
-            using = kwargs.get("using") or router.db_for_write(
-                type(self), instance=self
-            )
+            using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
             # Make sure we write to the same db for all attempted writes,
             # with a multi-master setup, theoretically we could try to
             # write and rollback on different DBs

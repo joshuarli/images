@@ -2,7 +2,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("contenttypes", "0001_initial")]
 
     operations = [
@@ -50,9 +49,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "object_id",
-                    models.IntegerField(
-                        help_text="", verbose_name="object ID", db_index=True
-                    ),
+                    models.IntegerField(help_text="", verbose_name="object ID", db_index=True),
                 ),
                 (
                     "content_type",

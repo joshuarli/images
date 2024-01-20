@@ -1,4 +1,4 @@
-__package__ = 'archivebox.core'
+__package__ = "archivebox.core"
 
 from django import forms
 
@@ -6,35 +6,45 @@ from ..util import URL_REGEX
 from ..parsers import PARSERS
 from ..vendor.taggit_utils import edit_string_for_tags, parse_tags
 
-PARSER_CHOICES = [
-    (parser_key, parser[0])
-    for parser_key, parser in PARSERS.items()
-]
+PARSER_CHOICES = [(parser_key, parser[0]) for parser_key, parser in PARSERS.items()]
 DEPTH_CHOICES = (
-    ('0', 'depth = 0 (archive just these URLs)'),
-    ('1', 'depth = 1 (archive these URLs and all URLs one hop away)'),
+    ("0", "depth = 0 (archive just these URLs)"),
+    ("1", "depth = 1 (archive these URLs and all URLs one hop away)"),
 )
 
 from ..extractors import get_default_archive_methods
 
-ARCHIVE_METHODS = [
-    (name, name)
-    for name, _, _ in get_default_archive_methods()
-]
+ARCHIVE_METHODS = [(name, name) for name, _, _ in get_default_archive_methods()]
 
 
 class AddLinkForm(forms.Form):
-    url = forms.RegexField(label="URLs (one per line)", regex=URL_REGEX, min_length='6', strip=True, widget=forms.Textarea, required=True)
-    parser = forms.ChoiceField(label="URLs format", choices=[('auto', 'Auto-detect parser'), *PARSER_CHOICES], initial='auto')
+    url = forms.RegexField(
+        label="URLs (one per line)",
+        regex=URL_REGEX,
+        min_length="6",
+        strip=True,
+        widget=forms.Textarea,
+        required=True,
+    )
+    parser = forms.ChoiceField(
+        label="URLs format",
+        choices=[("auto", "Auto-detect parser"), *PARSER_CHOICES],
+        initial="auto",
+    )
     tag = forms.CharField(label="Tags (comma separated tag1,tag2,tag3)", strip=True, required=False)
-    depth = forms.ChoiceField(label="Archive depth", choices=DEPTH_CHOICES, initial='0', widget=forms.RadioSelect(attrs={"class": "depth-selection"}))
+    depth = forms.ChoiceField(
+        label="Archive depth",
+        choices=DEPTH_CHOICES,
+        initial="0",
+        widget=forms.RadioSelect(attrs={"class": "depth-selection"}),
+    )
     archive_methods = forms.MultipleChoiceField(
         label="Archive methods (select at least 1, otherwise all will be used by default)",
         required=False,
         widget=forms.SelectMultiple,
         choices=ARCHIVE_METHODS,
     )
-    # TODO: hook these up to the view and put them 
+    # TODO: hook these up to the view and put them
     # in a collapsible UI section labeled "Advanced"
     #
     # exclude_patterns = forms.CharField(
@@ -55,14 +65,17 @@ class AddLinkForm(forms.Form):
     #     initial=False,
     # )
 
+
 class TagWidgetMixin:
     def format_value(self, value):
         if value is not None and not isinstance(value, str):
             value = edit_string_for_tags(value)
         return super().format_value(value)
 
+
 class TagWidget(TagWidgetMixin, forms.TextInput):
     pass
+
 
 class TagField(forms.CharField):
     widget = TagWidget
@@ -72,9 +85,7 @@ class TagField(forms.CharField):
         try:
             return parse_tags(value)
         except ValueError:
-            raise forms.ValidationError(
-                "Please provide a comma-separated list of tags."
-            )
+            raise forms.ValidationError("Please provide a comma-separated list of tags.")
 
     def has_changed(self, initial_value, data_value):
         # Always return False if the field is disabled since self.bound_data

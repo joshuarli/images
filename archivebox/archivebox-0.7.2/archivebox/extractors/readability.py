@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -24,19 +24,23 @@ from .title import get_html
 
 
 @enforce_types
-def should_save_readability(link: Link, out_dir: Optional[str]=None, overwrite: Optional[bool]=False) -> bool:
+def should_save_readability(
+    link: Link, out_dir: Optional[str] = None, overwrite: Optional[bool] = False
+) -> bool:
     if is_static_file(link.url):
         return False
 
     out_dir = out_dir or Path(link.link_dir)
-    if not overwrite and (out_dir / 'readability').exists():
+    if not overwrite and (out_dir / "readability").exists():
         return False
 
     return SAVE_READABILITY
 
 
 @enforce_types
-def save_readability(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+def save_readability(
+    link: Link, out_dir: Optional[str] = None, timeout: int = TIMEOUT
+) -> ArchiveResult:
     """download reader friendly version using @mozilla/readability"""
 
     out_dir = Path(out_dir or link.link_dir)
@@ -45,14 +49,11 @@ def save_readability(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEO
 
     # Readability Docs: https://github.com/mozilla/readability
 
-    status = 'succeeded'
+    status = "succeeded"
     # fake command to show the user so they have something to try debugging if get_html fails
-    cmd = [
-        CURL_BINARY,
-        link.url
-    ]
+    cmd = [CURL_BINARY, link.url]
     readability_content = None
-    timer = TimedProgress(timeout, prefix='      ')
+    timer = TimedProgress(timeout, prefix="      ")
     try:
         document = get_html(link, out_dir)
         temp_doc = NamedTemporaryFile(delete=False)
@@ -60,45 +61,51 @@ def save_readability(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEO
         temp_doc.close()
 
         if not document or len(document) < 10:
-            raise ArchiveError('Readability could not find HTML to parse for article text')
+            raise ArchiveError("Readability could not find HTML to parse for article text")
 
         cmd = [
-            DEPENDENCIES['READABILITY_BINARY']['path'],
+            DEPENDENCIES["READABILITY_BINARY"]["path"],
             temp_doc.name,
             link.url,
         ]
         result = run(cmd, cwd=out_dir, timeout=timeout)
         try:
             result_json = json.loads(result.stdout)
-            assert result_json and 'content' in result_json, 'Readability output is not valid JSON'
+            assert result_json and "content" in result_json, "Readability output is not valid JSON"
         except json.JSONDecodeError:
-            raise ArchiveError('Readability was not able to archive the page (invalid JSON)', result.stdout + result.stderr)
+            raise ArchiveError(
+                "Readability was not able to archive the page (invalid JSON)",
+                result.stdout + result.stderr,
+            )
 
         output_folder.mkdir(exist_ok=True)
-        readability_content = result_json.pop("textContent") 
+        readability_content = result_json.pop("textContent")
         atomic_write(str(output_folder / "content.html"), result_json.pop("content"))
         atomic_write(str(output_folder / "content.txt"), readability_content)
         atomic_write(str(output_folder / "article.json"), result_json)
 
         output_tail = [
             line.strip()
-            for line in (result.stdout + result.stderr).decode().rsplit('\n', 5)[-5:]
+            for line in (result.stdout + result.stderr).decode().rsplit("\n", 5)[-5:]
             if line.strip()
         ]
         hints = (
-            'Got readability response code: {}.'.format(result.returncode),
+            "Got readability response code: {}.".format(result.returncode),
             *output_tail,
         )
 
         # Check for common failure cases
-        if (result.returncode > 0):
-            raise ArchiveError(f'Readability was not able to archive the page (status={result.returncode})', hints)
+        if result.returncode > 0:
+            raise ArchiveError(
+                f"Readability was not able to archive the page (status={result.returncode})",
+                hints,
+            )
     except (Exception, OSError) as err:
-        status = 'failed'
+        status = "failed"
         output = err
 
         # prefer Chrome dom output to singlefile because singlefile often contains huge url(data:image/...base64) strings that make the html too long to parse with readability
-        cmd = [cmd[0], './{dom,singlefile}.html']
+        cmd = [cmd[0], "./{dom,singlefile}.html"]
     finally:
         timer.end()
 
@@ -109,5 +116,5 @@ def save_readability(link: Link, out_dir: Optional[str]=None, timeout: int=TIMEO
         output=output,
         status=status,
         index_texts=[readability_content] if readability_content else [],
-        **timer.stats,  
+        **timer.stats,
     )

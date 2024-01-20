@@ -6,7 +6,7 @@ DO NOT ADD ANY NEW FEATURES TO THIS FILE, NEW CODE GOES HERE: core/models.py
 
 """
 
-__package__ = 'archivebox.index'
+__package__ = "archivebox.index"
 
 from pathlib import Path
 
@@ -22,14 +22,17 @@ from ..system import get_dir_size
 from ..util import ts_to_date_str, parse_date
 from ..config import OUTPUT_DIR, ARCHIVE_DIR_NAME, FAVICON_PROVIDER
 
+
 class ArchiveError(Exception):
     def __init__(self, message, hints=None):
         super().__init__(message)
         self.hints = hints
 
+
 LinkDict = Dict[str, Any]
 
 ArchiveOutput = Union[str, Exception, None]
+
 
 @dataclass(frozen=True)
 class ArchiveResult:
@@ -41,7 +44,7 @@ class ArchiveResult:
     start_ts: datetime
     end_ts: datetime
     index_texts: Union[List[str], None] = None
-    schema: str = 'ArchiveResult'
+    schema: str = "ArchiveResult"
 
     def __post_init__(self):
         self.typecheck()
@@ -65,6 +68,7 @@ class ArchiveResult:
     @classmethod
     def guess_ts(_cls, dict_info):
         from ..util import parse_date
+
         parsed_timestamp = parse_date(dict_info["timestamp"])
         start_ts = parsed_timestamp
         end_ts = parsed_timestamp + timedelta(seconds=int(dict_info["duration"]))
@@ -74,18 +78,14 @@ class ArchiveResult:
     def from_json(cls, json_info, guess=False):
         from ..util import parse_date
 
-        info = {
-            key: val
-            for key, val in json_info.items()
-            if key in cls.field_names()
-        }
+        info = {key: val for key, val in json_info.items() if key in cls.field_names()}
         if guess:
             keys = info.keys()
             if "start_ts" not in keys:
                 info["start_ts"], info["end_ts"] = cls.guess_ts(json_info)
             else:
-                info['start_ts'] = parse_date(info['start_ts'])
-                info['end_ts'] = parse_date(info['end_ts'])
+                info["start_ts"] = parse_date(info["start_ts"])
+                info["end_ts"] = parse_date(info["end_ts"])
             if "pwd" not in keys:
                 info["pwd"] = str(Path(OUTPUT_DIR) / ARCHIVE_DIR_NAME / json_info["timestamp"])
             if "cmd_version" not in keys:
@@ -93,9 +93,9 @@ class ArchiveResult:
             if "cmd" not in keys:
                 info["cmd"] = []
         else:
-            info['start_ts'] = parse_date(info['start_ts'])
-            info['end_ts'] = parse_date(info['end_ts'])
-            info['cmd_version'] = info.get('cmd_version')
+            info["start_ts"] = parse_date(info["start_ts"])
+            info["end_ts"] = parse_date(info["end_ts"])
+            info["cmd_version"] = info.get("cmd_version")
         if type(info["cmd"]) is str:
             info["cmd"] = [info["cmd"]]
         return cls(**info)
@@ -110,11 +110,11 @@ class ArchiveResult:
 
         return to_json(self, indent=indent, sort_keys=sort_keys)
 
-    def to_csv(self, cols: Optional[List[str]]=None, separator: str=',', ljust: int=0) -> str:
+    def to_csv(self, cols: Optional[List[str]] = None, separator: str = ",", ljust: int = 0) -> str:
         from .csv import to_csv
 
         return to_csv(self, csv_col=cols or self.field_names(), separator=separator, ljust=ljust)
-    
+
     @classmethod
     def field_names(cls):
         return [f.name for f in fields(cls)]
@@ -122,6 +122,7 @@ class ArchiveResult:
     @property
     def duration(self) -> int:
         return (self.end_ts - self.start_ts).seconds
+
 
 @dataclass(frozen=True)
 class Link:
@@ -132,7 +133,7 @@ class Link:
     sources: List[str]
     history: Dict[str, List[ArchiveResult]] = field(default_factory=lambda: {})
     updated: Optional[datetime] = None
-    schema: str = 'Link'
+    schema: str = "Link"
 
     def __str__(self) -> str:
         return f'[{self.timestamp}] {self.url} "{self.title}"'
@@ -153,16 +154,17 @@ class Link:
         if not isinstance(other, Link):
             return NotImplemented
         if not self.timestamp or not other.timestamp:
-            return 
+            return
         return float(self.timestamp) > float(other.timestamp)
 
     def typecheck(self) -> None:
         from ..config import stderr, ANSI
+
         try:
             assert self.schema == self.__class__.__name__
             assert isinstance(self.timestamp, str) and self.timestamp
-            assert self.timestamp.replace('.', '').isdigit()
-            assert isinstance(self.url, str) and '://' in self.url
+            assert self.timestamp.replace(".", "").isdigit()
+            assert isinstance(self.url, str) and "://" in self.url
             assert self.updated is None or isinstance(self.updated, datetime)
             assert self.title is None or (isinstance(self.title, str) and self.title)
             assert self.tags is None or isinstance(self.tags, str)
@@ -174,79 +176,81 @@ class Link:
                 assert isinstance(results, list)
                 assert all(isinstance(result, ArchiveResult) for result in results)
         except Exception:
-            stderr('{red}[X] Error while loading link! [{}] {} "{}"{reset}'.format(self.timestamp, self.url, self.title, **ANSI))
+            stderr(
+                '{red}[X] Error while loading link! [{}] {} "{}"{reset}'.format(
+                    self.timestamp, self.url, self.title, **ANSI
+                )
+            )
             raise
-    
+
     def _asdict(self, extended=False):
         info = {
-            'schema': 'Link',
-            'url': self.url,
-            'title': self.title or None,
-            'timestamp': self.timestamp,
-            'updated': self.updated or None,
-            'tags': self.tags or None,
-            'sources': self.sources or [],
-            'history': self.history or {},
+            "schema": "Link",
+            "url": self.url,
+            "title": self.title or None,
+            "timestamp": self.timestamp,
+            "updated": self.updated or None,
+            "tags": self.tags or None,
+            "sources": self.sources or [],
+            "history": self.history or {},
         }
         if extended:
-            info.update({
-                'snapshot_id': self.snapshot_id,
-                'link_dir': self.link_dir,
-                'archive_path': self.archive_path,
-                
-                'hash': self.url_hash,
-                'base_url': self.base_url,
-                'scheme': self.scheme,
-                'domain': self.domain,
-                'path': self.path,
-                'basename': self.basename,
-                'extension': self.extension,
-                'is_static': self.is_static,
-                
-                'tags_str': (self.tags or '').strip(','),   # only used to render static index in index/html.py, remove if no longer needed there
-                'icons': None,           # only used to render static index in index/html.py, remove if no longer needed there
-
-                'bookmarked_date': self.bookmarked_date,
-                'updated_date': self.updated_date,
-                'oldest_archive_date': self.oldest_archive_date,
-                'newest_archive_date': self.newest_archive_date,
-        
-                'is_archived': self.is_archived,
-                'num_outputs': self.num_outputs,
-                'num_failures': self.num_failures,
-                
-                'latest': self.latest_outputs(),
-                'canonical': self.canonical_outputs(),
-            })
+            info.update(
+                {
+                    "snapshot_id": self.snapshot_id,
+                    "link_dir": self.link_dir,
+                    "archive_path": self.archive_path,
+                    "hash": self.url_hash,
+                    "base_url": self.base_url,
+                    "scheme": self.scheme,
+                    "domain": self.domain,
+                    "path": self.path,
+                    "basename": self.basename,
+                    "extension": self.extension,
+                    "is_static": self.is_static,
+                    "tags_str": (self.tags or "").strip(
+                        ","
+                    ),  # only used to render static index in index/html.py, remove if no longer needed there
+                    "icons": None,  # only used to render static index in index/html.py, remove if no longer needed there
+                    "bookmarked_date": self.bookmarked_date,
+                    "updated_date": self.updated_date,
+                    "oldest_archive_date": self.oldest_archive_date,
+                    "newest_archive_date": self.newest_archive_date,
+                    "is_archived": self.is_archived,
+                    "num_outputs": self.num_outputs,
+                    "num_failures": self.num_failures,
+                    "latest": self.latest_outputs(),
+                    "canonical": self.canonical_outputs(),
+                }
+            )
         return info
 
     def as_snapshot(self):
         from core.models import Snapshot
+
         return Snapshot.objects.get(url=self.url)
 
     @classmethod
     def from_json(cls, json_info, guess=False):
         from ..util import parse_date
-        
-        info = {
-            key: val
-            for key, val in json_info.items()
-            if key in cls.field_names()
-        }
-        info['updated'] = parse_date(info.get('updated'))
-        info['sources'] = info.get('sources') or []
 
-        json_history = info.get('history') or {}
+        info = {key: val for key, val in json_info.items() if key in cls.field_names()}
+        info["updated"] = parse_date(info.get("updated"))
+        info["sources"] = info.get("sources") or []
+
+        json_history = info.get("history") or {}
         cast_history = {}
 
         for method, method_history in json_history.items():
             cast_history[method] = []
             for json_result in method_history:
-                assert isinstance(json_result, dict), 'Items in Link["history"][method] must be dicts'
+                assert isinstance(
+                    json_result, dict
+                ), 'Items in Link["history"][method] must be dicts'
                 cast_result = ArchiveResult.from_json(json_result, guess)
                 cast_history[method].append(cast_result)
 
-        info['history'] = cast_history
+        info["history"] = cast_history
         return cls(**info)
 
     def to_json(self, indent=4, sort_keys=True) -> str:
@@ -254,7 +258,7 @@ class Link:
 
         return to_json(self, indent=indent, sort_keys=sort_keys)
 
-    def to_csv(self, cols: Optional[List[str]]=None, separator: str=',', ljust: int=0) -> str:
+    def to_csv(self, cols: Optional[List[str]] = None, separator: str = ",", ljust: int = 0) -> str:
         from .csv import to_csv
 
         return to_csv(self, cols=cols or self.field_names(), separator=separator, ljust=ljust)
@@ -262,7 +266,8 @@ class Link:
     @cached_property
     def snapshot_id(self):
         from core.models import Snapshot
-        return str(Snapshot.objects.only('id').get(url=self.url).id)
+
+        return str(Snapshot.objects.only("id").get(url=self.url).id)
 
     @classmethod
     def field_names(cls):
@@ -271,13 +276,15 @@ class Link:
     @property
     def link_dir(self) -> str:
         from ..config import CONFIG
-        return str(Path(CONFIG['ARCHIVE_DIR']) / self.timestamp)
+
+        return str(Path(CONFIG["ARCHIVE_DIR"]) / self.timestamp)
 
     @property
     def archive_path(self) -> str:
         from ..config import ARCHIVE_DIR_NAME
-        return '{}/{}'.format(ARCHIVE_DIR_NAME, self.timestamp)
-    
+
+        return "{}/{}".format(ARCHIVE_DIR_NAME, self.timestamp)
+
     @property
     def archive_size(self) -> float:
         try:
@@ -295,31 +302,37 @@ class Link:
     @property
     def scheme(self) -> str:
         from ..util import scheme
+
         return scheme(self.url)
 
     @property
     def extension(self) -> str:
         from ..util import extension
+
         return extension(self.url)
 
     @property
     def domain(self) -> str:
         from ..util import domain
+
         return domain(self.url)
 
     @property
     def path(self) -> str:
         from ..util import path
+
         return path(self.url)
 
     @property
     def basename(self) -> str:
         from ..util import basename
+
         return basename(self.url)
 
     @property
     def base_url(self) -> str:
         from ..util import base_url
+
         return base_url(self.url)
 
     ### Pretty Printing Helpers
@@ -327,13 +340,12 @@ class Link:
     def bookmarked_date(self) -> Optional[str]:
         max_ts = (datetime.now(timezone.utc) + timedelta(days=30)).timestamp()
 
-        if self.timestamp and self.timestamp.replace('.', '').isdigit():
+        if self.timestamp and self.timestamp.replace(".", "").isdigit():
             if 0 < float(self.timestamp) < max_ts:
                 return ts_to_date_str(datetime.fromtimestamp(float(self.timestamp)))
             else:
                 return str(self.timestamp)
         return None
-
 
     @property
     def updated_date(self) -> Optional[str]:
@@ -344,7 +356,7 @@ class Link:
         return [
             parse_date(result.start_ts)
             for method in self.history.keys()
-                for result in self.history[method]
+            for result in self.history[method]
         ]
 
     @property
@@ -362,14 +374,17 @@ class Link:
 
     @property
     def num_failures(self) -> int:
-        return sum(1
-                   for method in self.history.keys()
-                       for result in self.history[method]
-                            if result.status == 'failed')
+        return sum(
+            1
+            for method in self.history.keys()
+            for result in self.history[method]
+            if result.status == "failed"
+        )
 
     @property
     def is_static(self) -> bool:
         from ..util import is_static_file
+
         return is_static_file(self.url)
 
     @property
@@ -379,24 +394,30 @@ class Link:
 
         output_paths = (
             domain(self.url),
-            'output.pdf',
-            'screenshot.png',
-            'output.html',
-            'media',
-            'singlefile.html'
+            "output.pdf",
+            "screenshot.png",
+            "output.html",
+            "media",
+            "singlefile.html",
         )
 
-        return any(
-            (Path(ARCHIVE_DIR) / self.timestamp / path).exists()
-            for path in output_paths
-        )
+        return any((Path(ARCHIVE_DIR) / self.timestamp / path).exists() for path in output_paths)
 
-    def latest_outputs(self, status: str=None) -> Dict[str, ArchiveOutput]:
+    def latest_outputs(self, status: str = None) -> Dict[str, ArchiveOutput]:
         """get the latest output that each archive method produced for link"""
-        
+
         ARCHIVE_METHODS = (
-            'title', 'favicon', 'wget', 'warc', 'singlefile', 'pdf',
-            'screenshot', 'dom', 'git', 'media', 'archive_org',
+            "title",
+            "favicon",
+            "wget",
+            "warc",
+            "singlefile",
+            "pdf",
+            "screenshot",
+            "dom",
+            "git",
+            "media",
+            "archive_org",
         )
         latest: Dict[str, ArchiveOutput] = {}
         for archive_method in ARCHIVE_METHODS:
@@ -413,47 +434,48 @@ class Link:
                 latest[archive_method] = None
         return latest
 
-
     def canonical_outputs(self) -> Dict[str, Optional[str]]:
         """predict the expected output paths that should be present after archiving"""
 
         from ..extractors.wget import wget_output_path
+
         # TODO: banish this awful duplication from the codebase and import these
         # from their respective extractor files
         canonical = {
-            'index_path': 'index.html',
-            'favicon_path': 'favicon.ico',
-            'google_favicon_path': FAVICON_PROVIDER.format(self.domain),
-            'wget_path': wget_output_path(self),
-            'warc_path': 'warc/',
-            'singlefile_path': 'singlefile.html',
-            'readability_path': 'readability/content.html',
-            'mercury_path': 'mercury/content.html',
-            'htmltotext_path': 'htmltotext.txt',
-            'pdf_path': 'output.pdf',
-            'screenshot_path': 'screenshot.png',
-            'dom_path': 'output.html',
-            'archive_org_path': 'https://web.archive.org/web/{}'.format(self.base_url),
-            'git_path': 'git/',
-            'media_path': 'media/',
-            'headers_path': 'headers.json',
+            "index_path": "index.html",
+            "favicon_path": "favicon.ico",
+            "google_favicon_path": FAVICON_PROVIDER.format(self.domain),
+            "wget_path": wget_output_path(self),
+            "warc_path": "warc/",
+            "singlefile_path": "singlefile.html",
+            "readability_path": "readability/content.html",
+            "mercury_path": "mercury/content.html",
+            "htmltotext_path": "htmltotext.txt",
+            "pdf_path": "output.pdf",
+            "screenshot_path": "screenshot.png",
+            "dom_path": "output.html",
+            "archive_org_path": "https://web.archive.org/web/{}".format(self.base_url),
+            "git_path": "git/",
+            "media_path": "media/",
+            "headers_path": "headers.json",
         }
         if self.is_static:
             # static binary files like PDF and images are handled slightly differently.
-            # they're just downloaded once and aren't archived separately multiple times, 
+            # they're just downloaded once and aren't archived separately multiple times,
             # so the wget, screenshot, & pdf urls should all point to the same file
 
             static_path = wget_output_path(self)
-            canonical.update({
-                'title': self.basename,
-                'wget_path': static_path,
-                'pdf_path': static_path,
-                'screenshot_path': static_path,
-                'dom_path': static_path,
-                'singlefile_path': static_path,
-                'readability_path': static_path,
-                'mercury_path': static_path,
-                'htmltotext_path': static_path,
-            })
+            canonical.update(
+                {
+                    "title": self.basename,
+                    "wget_path": static_path,
+                    "pdf_path": static_path,
+                    "screenshot_path": static_path,
+                    "dom_path": static_path,
+                    "singlefile_path": static_path,
+                    "readability_path": static_path,
+                    "mercury_path": static_path,
+                    "htmltotext_path": static_path,
+                }
+            )
         return canonical
-

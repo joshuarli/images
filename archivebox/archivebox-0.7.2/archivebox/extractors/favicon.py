@@ -1,4 +1,4 @@
-__package__ = 'archivebox.extractors'
+__package__ = "archivebox.extractors"
 
 from pathlib import Path
 
@@ -21,34 +21,41 @@ from ..logging_util import TimedProgress
 
 
 @enforce_types
-def should_save_favicon(link: Link, out_dir: Optional[str]=None, overwrite: Optional[bool]=False) -> bool:
+def should_save_favicon(
+    link: Link, out_dir: Optional[str] = None, overwrite: Optional[bool] = False
+) -> bool:
     out_dir = out_dir or Path(link.link_dir)
-    if not overwrite and (out_dir / 'favicon.ico').exists():
+    if not overwrite and (out_dir / "favicon.ico").exists():
         return False
 
     return SAVE_FAVICON
 
+
 @enforce_types
-def save_favicon(link: Link, out_dir: Optional[Path]=None, timeout: int=TIMEOUT) -> ArchiveResult:
+def save_favicon(
+    link: Link, out_dir: Optional[Path] = None, timeout: int = TIMEOUT
+) -> ArchiveResult:
     """download site favicon from google's favicon api"""
 
     out_dir = out_dir or link.link_dir
-    output: ArchiveOutput = 'favicon.ico'
+    output: ArchiveOutput = "favicon.ico"
     cmd = [
         CURL_BINARY,
         *CURL_ARGS,
-        '--max-time', str(timeout),
-        '--output', str(output),
-        *(['--user-agent', '{}'.format(CURL_USER_AGENT)] if CURL_USER_AGENT else []),
-        *([] if CHECK_SSL_VALIDITY else ['--insecure']),
+        "--max-time",
+        str(timeout),
+        "--output",
+        str(output),
+        *(["--user-agent", "{}".format(CURL_USER_AGENT)] if CURL_USER_AGENT else []),
+        *([] if CHECK_SSL_VALIDITY else ["--insecure"]),
         FAVICON_PROVIDER.format(domain(link.url)),
     ]
-    status = 'failed'
-    timer = TimedProgress(timeout, prefix='      ')
+    status = "failed"
+    timer = TimedProgress(timeout, prefix="      ")
     try:
         run(cmd, cwd=str(out_dir), timeout=timeout)
         chmod_file(output, cwd=str(out_dir))
-        status = 'succeeded'
+        status = "succeeded"
     except Exception as err:
         output = err
     finally:
