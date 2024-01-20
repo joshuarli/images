@@ -16,4 +16,3 @@ podman exec --user=archivebox goofy_fermat archivebox ...
 - chromium direct install without playwright?
 - ublock origin
 - profile why startup is so slow
-- disable WARC and wget

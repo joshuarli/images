@@ -123,7 +123,7 @@ CONFIG_SCHEMA: Dict[str, ConfigDefaultDict] = {
     "ARCHIVE_METHOD_TOGGLES": {
         "SAVE_TITLE": {"type": bool, "default": True, "aliases": ("FETCH_TITLE",)},
         "SAVE_FAVICON": {"type": bool, "default": True, "aliases": ("FETCH_FAVICON",)},
-        "SAVE_WGET": {"type": bool, "default": True, "aliases": ("FETCH_WGET",)},
+        "SAVE_WGET": {"type": bool, "default": False, "aliases": ("FETCH_WGET",)},
         "SAVE_WGET_REQUISITES": {
             "type": bool,
             "default": True,
@@ -145,7 +145,7 @@ CONFIG_SCHEMA: Dict[str, ConfigDefaultDict] = {
             "default": True,
             "aliases": ("FETCH_HTMLTOTEXT",),
         },
-        "SAVE_PDF": {"type": bool, "default": True, "aliases": ("FETCH_PDF",)},
+        "SAVE_PDF": {"type": bool, "default": False, "aliases": ("FETCH_PDF",)},
         "SAVE_SCREENSHOT": {
             "type": bool,
             "default": True,
@@ -153,7 +153,7 @@ CONFIG_SCHEMA: Dict[str, ConfigDefaultDict] = {
         },
         "SAVE_DOM": {"type": bool, "default": True, "aliases": ("FETCH_DOM",)},
         "SAVE_HEADERS": {"type": bool, "default": True, "aliases": ("FETCH_HEADERS",)},
-        "SAVE_WARC": {"type": bool, "default": True, "aliases": ("FETCH_WARC",)},
+        "SAVE_WARC": {"type": bool, "default": False, "aliases": ("FETCH_WARC",)},
         "SAVE_GIT": {"type": bool, "default": True, "aliases": ("FETCH_GIT",)},
         "SAVE_MEDIA": {"type": bool, "default": True, "aliases": ("FETCH_MEDIA",)},
         "SAVE_ARCHIVE_DOT_ORG": {

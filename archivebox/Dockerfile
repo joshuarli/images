@@ -1,5 +1,3 @@
-# python3, ArchiveBox, curl, wget, chromium, youtube-dl, yt-dlp, single-file
-
 FROM python:3.11.7-slim-bookworm
 
 ENV IN_DOCKER=True \
@@ -32,7 +30,7 @@ RUN echo "[*] Setting up $ARCHIVEBOX_USER user uid=${DEFAULT_PUID}..." \
 RUN echo "[+] Installing APT base system dependencies..." \
     && apt-get update -qq \
     && apt-get install -qq -y --no-install-recommends \
-        ca-certificates curl wget ripgrep \
+        ca-certificates curl ripgrep \
         gosu cron procps \
     && rm -rf /var/lib/apt/lists/*
 
