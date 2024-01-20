@@ -95,7 +95,6 @@ from .config import (
     SEARCH_BACKEND_ENGINE,
     LDAP,
     get_version,
-    check_dependencies,
     check_data_folder,
     write_config_file,
     VERSION,
@@ -107,7 +106,6 @@ from .config import (
     DATA_LOCATIONS,
     DEPENDENCIES,
     CHROME_BINARY,
-    CHROME_VERSION,
     YOUTUBEDL_BINARY,
     YOUTUBEDL_VERSION,
     SINGLEFILE_VERSION,
@@ -294,9 +292,6 @@ def version(quiet: bool = False, out_dir: Path = OUTPUT_DIR) -> None:
         else:
             print()
             print("{white}[i] Data locations:{reset} (not in a data directory)".format(**ANSI))
-
-        print()
-        check_dependencies()
 
 
 @enforce_types
@@ -770,7 +765,6 @@ def add(
 
     # Load list of links from the existing index
     check_data_folder(out_dir=out_dir)
-    check_dependencies()
     new_links: List[Link] = []
     all_links = load_main_index(out_dir=out_dir)
 
@@ -983,7 +977,6 @@ def update(
     """Import any new links from subscriptions and retry any previously failed/skipped links"""
 
     check_data_folder(out_dir=out_dir)
-    check_dependencies()
     new_links: List[Link] = []  # TODO: Remove input argument: only_new
 
     extractors = extractors.split(",") if extractors else []
@@ -1149,8 +1142,6 @@ def list_folders(
 
 @enforce_types
 def setup(out_dir: Path = OUTPUT_DIR) -> None:
-    """Automatically install all ArchiveBox dependencies and extras"""
-
     if not (out_dir / ARCHIVE_DIR_NAME).exists():
         run_subcommand("init", stdin=None, pwd=out_dir)
 
@@ -1160,177 +1151,6 @@ def setup(out_dir: Path = OUTPUT_DIR) -> None:
     if not User.objects.filter(is_superuser=True).exists():
         stderr("\n[+] Creating new admin user for the Web UI...", color="green")
         run_subcommand("manage", subcommand_args=["createsuperuser"], pwd=out_dir)
-
-    stderr(
-        "\n[+] Installing enabled ArchiveBox dependencies automatically...",
-        color="green",
-    )
-
-    stderr("\n    Installing YOUTUBEDL_BINARY automatically using pip...")
-    if YOUTUBEDL_VERSION:
-        print(f"{YOUTUBEDL_VERSION} is already installed", YOUTUBEDL_BINARY)
-    else:
-        try:
-            run_shell(
-                [
-                    PYTHON_BINARY,
-                    "-m",
-                    "pip",
-                    "install",
-                    "--upgrade",
-                    "--no-cache-dir",
-                    "--no-warn-script-location",
-                    "youtube_dl",
-                ],
-                capture_output=False,
-                cwd=out_dir,
-            )
-            pkg_path = (
-                run_shell(
-                    [
-                        PYTHON_BINARY,
-                        "-m",
-                        "pip",
-                        "show",
-                        "youtube_dl",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    cwd=out_dir,
-                )
-                .stdout.decode()
-                .split("Location: ")[-1]
-                .split("\n", 1)[0]
-            )
-            NEW_YOUTUBEDL_BINARY = Path(pkg_path) / "youtube_dl" / "__main__.py"
-            os.chmod(NEW_YOUTUBEDL_BINARY, 0o777)
-            assert NEW_YOUTUBEDL_BINARY.exists(), f"youtube_dl must exist inside {pkg_path}"
-            config(f"YOUTUBEDL_BINARY={NEW_YOUTUBEDL_BINARY}", set=True, out_dir=out_dir)
-        except BaseException as e:  # lgtm [py/catch-base-exception]
-            stderr(f"[X] Failed to install python packages: {e}", color="red")
-            raise SystemExit(1)
-
-    if platform.machine() == "armv7l":
-        stderr(
-            "\n    Skip the automatic installation of CHROME_BINARY because playwright is not available on armv7."
-        )
-    else:
-        stderr("\n    Installing CHROME_BINARY automatically using playwright...")
-        if CHROME_VERSION:
-            print(f"{CHROME_VERSION} is already installed", CHROME_BINARY)
-        else:
-            try:
-                run_shell(
-                    [
-                        PYTHON_BINARY,
-                        "-m",
-                        "pip",
-                        "install",
-                        "--upgrade",
-                        "--no-cache-dir",
-                        "--no-warn-script-location",
-                        "playwright",
-                    ],
-                    capture_output=False,
-                    cwd=out_dir,
-                )
-                run_shell(
-                    [PYTHON_BINARY, "-m", "playwright", "install", "chromium"],
-                    capture_output=False,
-                    cwd=out_dir,
-                )
-                proc = run_shell(
-                    [
-                        PYTHON_BINARY,
-                        "-c",
-                        "from playwright.sync_api import sync_playwright; print(sync_playwright().start().chromium.executable_path)",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    cwd=out_dir,
-                )
-                NEW_CHROME_BINARY = (
-                    proc.stdout.decode().strip()
-                    if isinstance(proc.stdout, bytes)
-                    else proc.stdout.strip()
-                )
-                assert NEW_CHROME_BINARY and len(
-                    NEW_CHROME_BINARY
-                ), "CHROME_BINARY must contain a path"
-                config(f"CHROME_BINARY={NEW_CHROME_BINARY}", set=True, out_dir=out_dir)
-            except BaseException as e:  # lgtm [py/catch-base-exception]
-                stderr(
-                    f"[X] Failed to install chromium using playwright: {e.__class__.__name__} {e}",
-                    color="red",
-                )
-                raise SystemExit(1)
-
-    stderr(
-        "\n    Installing SINGLEFILE_BINARY, READABILITY_BINARY, MERCURY_BINARY automatically using npm..."
-    )
-    if not NODE_VERSION:
-        stderr(
-            "[X] You must first install node & npm using your system package manager",
-            color="red",
-        )
-        hint(
-            [
-                "https://github.com/nodesource/distributions#table-of-contents",
-                "or to disable all node-based modules run: archivebox config --set USE_NODE=False",
-            ]
-        )
-        raise SystemExit(1)
-
-    if all((SINGLEFILE_VERSION, READABILITY_VERSION, MERCURY_VERSION)):
-        print("SINGLEFILE_BINARY, READABILITY_BINARY, and MERCURURY_BINARY are already installed")
-    else:
-        try:
-            # clear out old npm package locations
-            paths = (
-                out_dir / "package.json",
-                out_dir / "package_lock.json",
-                out_dir / "node_modules",
-            )
-            for path in paths:
-                if path.is_dir():
-                    shutil.rmtree(path, ignore_errors=True)
-                elif path.is_file():
-                    os.remove(path)
-
-            shutil.copyfile(
-                PACKAGE_DIR / "package.json", out_dir / "package.json"
-            )  # copy the js requirements list from the source install into the data dir
-            # lets blindly assume that calling out to npm via shell works reliably cross-platform 🤡 (until proven otherwise via support tickets)
-            run_shell(
-                [
-                    "npm",
-                    "install",
-                    "--prefix",
-                    str(out_dir),  # force it to put the node_modules dir in this folder
-                    "--force",  # overwrite any existing node_modules
-                    "--no-save",  # don't bother saving updating the package.json or package-lock.json file
-                    "--no-audit",  # don't bother checking for newer versions with security vuln fixes
-                    "--no-fund",  # hide "please fund our project" messages
-                    "--loglevel",
-                    "error",  # only show erros (hide warn/info/debug) during installation
-                    # these args are written in blood, change with caution
-                ],
-                capture_output=False,
-                cwd=out_dir,
-            )
-            os.remove(out_dir / "package.json")
-        except BaseException as e:  # lgtm [py/catch-base-exception]
-            stderr(f"[X] Failed to install npm packages: {e}", color="red")
-            hint(f"Try deleting {out_dir}/node_modules and running it again")
-            raise SystemExit(1)
-
-    stderr("\n[√] Set up ArchiveBox and its dependencies successfully.", color="green")
-
-    run_shell(
-        [PYTHON_BINARY, ARCHIVEBOX_BINARY, "--version"],
-        capture_output=False,
-        cwd=out_dir,
-    )
 
 
 @enforce_types

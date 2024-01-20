@@ -235,7 +235,7 @@ def get_headers(url: str, timeout: int = None) -> str:
 def chrome_args(**options) -> List[str]:
     """helper to build up a chrome shell command with arguments"""
 
-    from .config import CHROME_OPTIONS, CHROME_VERSION
+    from .config import CHROME_OPTIONS
 
     options = {**CHROME_OPTIONS, **options}
 
@@ -245,11 +245,7 @@ def chrome_args(**options) -> List[str]:
     cmd_args = [options["CHROME_BINARY"]]
 
     if options["CHROME_HEADLESS"]:
-        chrome_major_version = int(re.search(r"\s(\d+)\.\d", CHROME_VERSION)[1])
-        if chrome_major_version >= 111:
-            cmd_args += ("--headless=new",)
-        else:
-            cmd_args += ("--headless",)
+        cmd_args += ("--headless=new",)
 
     if not options["CHROME_SANDBOX"]:
         # assume this means we are running inside a docker container

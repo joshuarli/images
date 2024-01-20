@@ -13,8 +13,7 @@ ENV IN_DOCKER=True \
     npm_config_loglevel=error \
     ARCHIVEBOX_USER="archivebox" \
     DEFAULT_PUID=911 \
-    DEFAULT_PGID=911 \
-    PATH="/app/node_modules/.bin:$PATH"
+    DEFAULT_PGID=911
 
 SHELL ["/bin/bash", "-o", "pipefail", "-o", "errexit", "-o", "errtrace", "-o", "nounset", "-c"]
 
@@ -34,16 +33,8 @@ RUN echo "[+] Installing APT base system dependencies..." \
         gosu cron procps \
     && rm -rf /var/lib/apt/lists/*
 
-# Install chromium browser using playwright
-RUN echo "[+] Installing Browser binary dependencies to /browsers..." \
-    && pip install playwright \
-    && playwright install --with-deps chromium \
-    && export CHROME_BINARY="$(python -c 'from playwright.sync_api import sync_playwright; print(sync_playwright().start().chromium.executable_path)')" \
-    && ln -s "$CHROME_BINARY" /usr/bin/chromium-browser \
-    && mkdir -p "/home/${ARCHIVEBOX_USER}/.config/chromium/Crash Reports/pending/" \
-    && chown -R $ARCHIVEBOX_USER "/home/${ARCHIVEBOX_USER}/.config" \
-    && mkdir -p /browsers \
-    && chown -R $ARCHIVEBOX_USER /browsers
+# https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json
+ENV CHROME_VERSION=120.0.6099.109
 
 WORKDIR /app
 COPY "./archivebox-0.7.2/archivebox/package.json" "./package-lock.json" .
@@ -55,6 +46,8 @@ RUN apt-get update -qq \
     # update npm to latest
     && npm i -g npm --cache /root/.npm \
     && npm ci --prefer-offline --no-audit --cache /root/.npm \
+    # https://developer.chrome.com/blog/chrome-for-testing/#how_can_i_get_chrome_for_testing_binaries
+    && npx @puppeteer/browsers install "chrome@${CHROME_VERSION}" \
     && apt-get purge -y --auto-remove gnupg2 npm \
     && rm -rf /var/lib/apt/lists/*
 
@@ -71,4 +64,6 @@ EXPOSE 8000
 
 COPY "./docker_entrypoint.sh" /
 ENTRYPOINT ["/docker_entrypoint.sh"]
+
+ENV PATH="/app/chrome/linux-${CHROME_VERSION}/chrome-linux64:/app/node_modules/.bin:$PATH"
 CMD ["archivebox", "server", "--quick-init", "0.0.0.0:8000"]

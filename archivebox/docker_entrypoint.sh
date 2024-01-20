@@ -60,10 +60,6 @@ fi
 # this is needed because Docker Desktop often does not map user permissions from the host properly
 chown -R $PUID:$PGID "$DATA_DIR"
 
-# also chown BROWSERS_DIR because otherwise 'archivebox setup' wont be able to install chrome at runtime
-export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/browsers}"
-chown -R $PUID:$PGID "$PLAYWRIGHT_BROWSERS_PATH"
-
 export IN_QEMU="$(pmap 1 | grep qemu >/dev/null && echo 'True' || echo 'False')"
 if [[ "$IN_QEMU" == "True" ]]; then
     echo -e "\n[!] Warning: Running $(uname -m) docker image using QEMU emulation, some things will break!" > /dev/stderr

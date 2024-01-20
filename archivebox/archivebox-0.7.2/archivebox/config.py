@@ -23,6 +23,7 @@ __package__ = "archivebox"
 
 import os
 import io
+import functools
 import re
 import sys
 import json
@@ -122,11 +123,11 @@ CONFIG_SCHEMA: Dict[str, ConfigDefaultDict] = {
     },
     "ARCHIVE_METHOD_TOGGLES": {
         "SAVE_TITLE": {"type": bool, "default": True, "aliases": ("FETCH_TITLE",)},
-        "SAVE_FAVICON": {"type": bool, "default": True, "aliases": ("FETCH_FAVICON",)},
+        "SAVE_FAVICON": {"type": bool, "default": False, "aliases": ("FETCH_FAVICON",)},
         "SAVE_WGET": {"type": bool, "default": False, "aliases": ("FETCH_WGET",)},
         "SAVE_WGET_REQUISITES": {
             "type": bool,
-            "default": True,
+            "default": False,
             "aliases": ("FETCH_WGET_REQUISITES",),
         },
         "SAVE_SINGLEFILE": {
@@ -154,8 +155,8 @@ CONFIG_SCHEMA: Dict[str, ConfigDefaultDict] = {
         "SAVE_DOM": {"type": bool, "default": True, "aliases": ("FETCH_DOM",)},
         "SAVE_HEADERS": {"type": bool, "default": True, "aliases": ("FETCH_HEADERS",)},
         "SAVE_WARC": {"type": bool, "default": False, "aliases": ("FETCH_WARC",)},
-        "SAVE_GIT": {"type": bool, "default": True, "aliases": ("FETCH_GIT",)},
-        "SAVE_MEDIA": {"type": bool, "default": True, "aliases": ("FETCH_MEDIA",)},
+        "SAVE_GIT": {"type": bool, "default": False, "aliases": ("FETCH_GIT",)},
+        "SAVE_MEDIA": {"type": bool, "default": False, "aliases": ("FETCH_MEDIA",)},
         "SAVE_ARCHIVE_DOT_ORG": {
             "type": bool,
             "default": True,
@@ -180,7 +181,7 @@ CONFIG_SCHEMA: Dict[str, ConfigDefaultDict] = {
             "type": str,
             "default": "github.com,bitbucket.org,gitlab.com,gist.github.com",
         },
-        "CHECK_SSL_VALIDITY": {"type": bool, "default": True},
+        "CHECK_SSL_VALIDITY": {"type": bool, "default": False},
         "MEDIA_MAX_SIZE": {"type": str, "default": "750m"},
         "CURL_USER_AGENT": {
             "type": str,
@@ -274,11 +275,11 @@ CONFIG_SCHEMA: Dict[str, ConfigDefaultDict] = {
     },
     "DEPENDENCY_CONFIG": {
         "USE_CURL": {"type": bool, "default": True},
-        "USE_WGET": {"type": bool, "default": True},
+        "USE_WGET": {"type": bool, "default": False},
         "USE_SINGLEFILE": {"type": bool, "default": True},
         "USE_READABILITY": {"type": bool, "default": True},
         "USE_MERCURY": {"type": bool, "default": True},
-        "USE_GIT": {"type": bool, "default": True},
+        "USE_GIT": {"type": bool, "default": False},
         "USE_CHROME": {"type": bool, "default": True},
         "USE_NODE": {"type": bool, "default": True},
         "USE_YOUTUBEDL": {"type": bool, "default": True},
@@ -504,38 +505,11 @@ def get_system_user():
 
 
 def get_version(config):
-    try:
-        return importlib.metadata.version(__package__ or "archivebox")
-    except importlib.metadata.PackageNotFoundError:
-        try:
-            pyproject_config = (config["PACKAGE_DIR"] / "pyproject.toml").read_text()
-            for line in pyproject_config:
-                if line.startswith("version = "):
-                    return line.split(" = ", 1)[-1].strip('"')
-        except FileNotFoundError:
-            # building docs, pyproject.toml is not available
-            return "dev"
-
-    raise Exception("Failed to detect installed archivebox version!")
+    return "josh"
 
 
-def get_commit_hash(config) -> Optional[str]:
-    try:
-        git_dir = config["PACKAGE_DIR"] / "../.git"
-        ref = (git_dir / "HEAD").read_text().strip().split(" ")[-1]
-        commit_hash = git_dir.joinpath(ref).read_text().strip()
-        return commit_hash
-    except Exception:
-        pass
-
-    try:
-        return (
-            list((config["PACKAGE_DIR"] / "../.git/refs/heads/").glob("*"))[0].read_text().strip()
-        )
-    except Exception:
-        pass
-
-    return None
+def get_commit_hash(config) -> str:
+    return "josh"
 
 
 def get_versions_available_on_github(config):
@@ -588,14 +562,6 @@ def get_versions_available_on_github(config):
 
 
 def can_upgrade(config):
-    if config["VERSIONS_AVAILABLE"] and config["VERSIONS_AVAILABLE"]["recommended_version"]:
-        recommended_version = parse_version_string(
-            config["VERSIONS_AVAILABLE"]["recommended_version"]["tag_name"]
-        )
-        current_version = parse_version_string(
-            config["VERSIONS_AVAILABLE"]["current_version"]["tag_name"]
-        )
-        return recommended_version > current_version
     return False
 
 
@@ -709,13 +675,9 @@ DYNAMIC_CONFIG_SCHEMA: ConfigDefaultDict = {
     "YOUTUBEDL_ARGS": {"default": lambda c: c["YOUTUBEDL_ARGS"] or []},
     "CHROME_BINARY": {"default": lambda c: c["CHROME_BINARY"] or find_chrome_binary()},
     "USE_CHROME": {
-        "default": lambda c: c["USE_CHROME"]
-        and c["CHROME_BINARY"]
-        and (c["SAVE_PDF"] or c["SAVE_SCREENSHOT"] or c["SAVE_DOM"] or c["SAVE_SINGLEFILE"])
+        "default": True,
     },
-    "CHROME_VERSION": {
-        "default": lambda c: bin_version(c["CHROME_BINARY"]) if c["USE_CHROME"] else None
-    },
+    "CHROME_VERSION": {"default": os.environ["CHROME_VERSION"]},
     "CHROME_USER_AGENT": {"default": lambda c: c["CHROME_USER_AGENT"].format(**c)},
     "SAVE_PDF": {"default": lambda c: c["USE_CHROME"] and c["SAVE_PDF"]},
     "SAVE_SCREENSHOT": {"default": lambda c: c["USE_CHROME"] and c["SAVE_SCREENSHOT"]},
@@ -1043,15 +1005,11 @@ def bin_version(binary: Optional[str]) -> Optional[str]:
     return None
 
 
+@functools.cache
 def bin_path(binary: Optional[str]) -> Optional[str]:
     if binary is None:
         return None
-
-    node_modules_bin = Path(".") / "node_modules" / ".bin" / binary
-    if node_modules_bin.exists():
-        return str(node_modules_bin.resolve())
-
-    return shutil.which(str(Path(binary).expanduser())) or shutil.which(str(binary)) or binary
+    return shutil.which(binary)
 
 
 def bin_hash(binary: Optional[str]) -> Optional[str]:
@@ -1070,23 +1028,13 @@ def bin_hash(binary: Optional[str]) -> Optional[str]:
 
 
 def find_chrome_binary() -> Optional[str]:
-    """find any installed chrome binaries in the default locations"""
-    # Precedence: Chromium, Chrome, Beta, Canary, Unstable, Dev
-    # make sure data dir finding precedence order always matches binary finding order
     default_executable_paths = (
-        # '~/Library/Caches/ms-playwright/chromium-*/chrome-mac/Chromium.app/Contents/MacOS/Chromium',
-        "chromium-browser",
-        "chromium",
-        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        # "chromium-browser",
+        # "chromium",
+        # "/Applications/Chromium.app/Contents/MacOS/Chromium",
         "chrome",
         "google-chrome",
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-        "google-chrome-stable",
-        "google-chrome-beta",
-        "google-chrome-canary",
-        "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-        "google-chrome-unstable",
-        "google-chrome-dev",
     )
     for name in default_executable_paths:
         full_path_exists = shutil.which(name)
@@ -1098,22 +1046,12 @@ def find_chrome_binary() -> Optional[str]:
 
 def find_chrome_data_dir() -> Optional[str]:
     """find any installed chrome user data directories in the default locations"""
-    # Precedence: Chromium, Chrome, Beta, Canary, Unstable, Dev
-    # make sure data dir finding precedence order always matches binary finding order
     default_profile_paths = (
         "~/.config/chromium",
         "~/Library/Application Support/Chromium",
-        "~/AppData/Local/Chromium/User Data",
         "~/.config/chrome",
         "~/.config/google-chrome",
         "~/Library/Application Support/Google/Chrome",
-        "~/AppData/Local/Google/Chrome/User Data",
-        "~/.config/google-chrome-stable",
-        "~/.config/google-chrome-beta",
-        "~/Library/Application Support/Google/Chrome Canary",
-        "~/AppData/Local/Google/Chrome SxS/User Data",
-        "~/.config/google-chrome-unstable",
-        "~/.config/google-chrome-dev",
     )
     for path in default_profile_paths:
         full_path = Path(path).resolve()
@@ -1307,10 +1245,10 @@ def get_dependency_info(config: ConfigDict) -> ConfigValue:
         },
         "CHROME_BINARY": {
             "path": bin_path(config["CHROME_BINARY"]),
-            "version": config["CHROME_VERSION"],
+            "version": os.environ["CHROME_VERSION"],
             "hash": bin_hash(config["CHROME_BINARY"]),
             "enabled": config["USE_CHROME"],
-            "is_valid": bool(config["CHROME_VERSION"]),
+            "is_valid": True,
         },
         "RIPGREP_BINARY": {
             "path": bin_path(config["RIPGREP_BINARY"]),
@@ -1444,45 +1382,10 @@ def check_system_config(config: ConfigDict = CONFIG) -> None:
 
         raise SystemExit(2)
 
-    ### Check Python environment
-    if sys.version_info[:3] < (3, 7, 0):
-        stderr(
-            f'[X] Python version is not new enough: {config["PYTHON_VERSION"]} (>3.6 is required)',
-            color="red",
-        )
-        stderr(
-            "    See https://github.com/ArchiveBox/ArchiveBox/wiki/Troubleshooting#python for help upgrading your Python installation."
-        )
-        raise SystemExit(2)
+    if not config["CHROME_BINARY"]:
+        raise Exception("Could not find any CHROME_BINARY installed on your system")
+    stderr(f'[i] Using Chrome binary: {config["CHROME_BINARY"]}')
 
-    if int(CONFIG["DJANGO_VERSION"].split(".")[0]) < 3:
-        stderr(
-            f'[X] Django version is not new enough: {config["DJANGO_VERSION"]} (>3.0 is required)',
-            color="red",
-        )
-        stderr(
-            "    Upgrade django using pip or your system package manager: pip3 install --upgrade django"
-        )
-        raise SystemExit(2)
-
-    if config["PYTHON_ENCODING"] not in ("UTF-8", "UTF8"):
-        stderr(
-            f'[X] Your system is running python3 scripts with a bad locale setting: {config["PYTHON_ENCODING"]} (it should be UTF-8).',
-            color="red",
-        )
-        stderr(
-            '    To fix it, add the line "export PYTHONIOENCODING=UTF-8" to your ~/.bashrc file (without quotes)'
-        )
-        stderr('    Or if you\'re using ubuntu/debian, run "dpkg-reconfigure locales"')
-        stderr("")
-        stderr("    Confirm that it's fixed by opening a new shell and running:")
-        stderr(
-            '        python3 -c "import sys; print(sys.stdout.encoding)"   # should output UTF-8'
-        )
-        raise SystemExit(2)
-
-    # stderr('[i] Using Chrome binary: {}'.format(shutil.which(CHROME_BINARY) or CHROME_BINARY))
-    # stderr('[i] Using Chrome data dir: {}'.format(os.path.abspath(CHROME_USER_DATA_DIR)))
     if config["CHROME_USER_DATA_DIR"] is not None:
         if not (Path(config["CHROME_USER_DATA_DIR"]) / "Default").exists():
             stderr(
@@ -1506,91 +1409,7 @@ def check_system_config(config: ConfigDict = CONFIG) -> None:
                     )
                 )
             raise SystemExit(2)
-
-
-def check_dependencies(config: ConfigDict = CONFIG, show_help: bool = True) -> None:
-    invalid_dependencies = [
-        (name, info)
-        for name, info in config["DEPENDENCIES"].items()
-        if info["enabled"] and not info["is_valid"]
-    ]
-    if invalid_dependencies and show_help:
-        stderr(
-            f"[!] Warning: Missing {len(invalid_dependencies)} recommended dependencies",
-            color="lightyellow",
-        )
-        for dependency, info in invalid_dependencies:
-            stderr(
-                "    ! {}: {} ({})".format(
-                    dependency,
-                    info["path"] or "unable to find binary",
-                    info["version"] or "unable to detect version",
-                )
-            )
-            if dependency in (
-                "YOUTUBEDL_BINARY",
-                "CHROME_BINARY",
-                "SINGLEFILE_BINARY",
-                "READABILITY_BINARY",
-                "MERCURY_BINARY",
-            ):
-                hint(
-                    (
-                        "To install all packages automatically run: archivebox setup",
-                        f'or to disable it and silence this warning: archivebox config --set SAVE_{dependency.rsplit("_", 1)[0]}=False',
-                        "",
-                    ),
-                    prefix="      ",
-                )
-        stderr("")
-
-    if config["TIMEOUT"] < 5:
-        stderr(
-            f'[!] Warning: TIMEOUT is set too low! (currently set to TIMEOUT={config["TIMEOUT"]} seconds)',
-            color="red",
-        )
-        stderr(
-            "    You must allow *at least* 5 seconds for indexing and archive methods to run succesfully."
-        )
-        stderr("    (Setting it to somewhere between 30 and 3000 seconds is recommended)")
-        stderr()
-        stderr(
-            "    If you want to make ArchiveBox run faster, disable specific archive methods instead:"
-        )
-        stderr(
-            "        https://github.com/ArchiveBox/ArchiveBox/wiki/Configuration#archive-method-toggles"
-        )
-        stderr()
-
-    elif config["USE_CHROME"] and config["TIMEOUT"] < 15:
-        stderr(
-            f'[!] Warning: TIMEOUT is set too low! (currently set to TIMEOUT={config["TIMEOUT"]} seconds)',
-            color="red",
-        )
-        stderr("    Chrome will fail to archive all sites if set to less than ~15 seconds.")
-        stderr("    (Setting it to somewhere between 30 and 300 seconds is recommended)")
-        stderr()
-        stderr(
-            "    If you want to make ArchiveBox run faster, disable specific archive methods instead:"
-        )
-        stderr(
-            "        https://github.com/ArchiveBox/ArchiveBox/wiki/Configuration#archive-method-toggles"
-        )
-        stderr()
-
-    if config["USE_YOUTUBEDL"] and config["MEDIA_TIMEOUT"] < 20:
-        stderr(
-            f'[!] Warning: MEDIA_TIMEOUT is set too low! (currently set to MEDIA_TIMEOUT={config["MEDIA_TIMEOUT"]} seconds)',
-            color="red",
-        )
-        stderr(
-            "    youtube-dl/yt-dlp will fail to archive any media if set to less than ~20 seconds."
-        )
-        stderr("    (Setting it somewhere over 60 seconds is recommended)")
-        stderr()
-        stderr("    If you want to disable media archiving entirely, set SAVE_MEDIA=False instead:")
-        stderr("        https://github.com/ArchiveBox/ArchiveBox/wiki/Configuration#save_media")
-        stderr()
+        stderr(f"[i] Using Chrome data dir: {os.path.abspath(CHROME_USER_DATA_DIR)}")
 
 
 def check_data_folder(out_dir: Union[str, Path, None] = None, config: ConfigDict = CONFIG) -> None:
