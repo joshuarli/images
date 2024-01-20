@@ -1356,14 +1356,3 @@ def manage(args: Optional[List[str]]=None, out_dir: Path=OUTPUT_DIR) -> None:
         stderr()
 
     execute_from_command_line([f'{ARCHIVEBOX_BINARY} manage', *(args or ['help'])])
-
-
-@enforce_types
-def shell(out_dir: Path=OUTPUT_DIR) -> None:
-    """Enter an interactive ArchiveBox Django shell"""
-
-    check_data_folder(out_dir=out_dir)
-
-    from django.core.management import call_command
-    call_command("shell_plus")
-

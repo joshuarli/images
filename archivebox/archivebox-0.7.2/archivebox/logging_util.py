@@ -74,7 +74,7 @@ def get_fd_info(fd) -> Dict[str, Any]:
         'IS_TERMINAL': IS_TERMINAL, 'IS_LINE_BUFFERED': IS_LINE_BUFFERED,
         'IS_READABLE': IS_READABLE,
     }
-    
+
 
 # # Log debug information about stdin, stdout, and stderr
 # sys.stdout.write('[>&1] this is python stdout\n')
@@ -119,7 +119,7 @@ def reject_stdin(caller: str, stdin: Optional[IO]=sys.stdin) -> None:
 
 def accept_stdin(stdin: Optional[IO]=sys.stdin) -> Optional[str]:
     """accept any standard input and return it as a string or None"""
-    
+
     if not stdin:
         return None
 
@@ -152,7 +152,7 @@ class TimedProgress:
 
         end_ts = datetime.now(timezone.utc)
         self.stats['end_ts'] = end_ts
-        
+
         if self.SHOW_PROGRESS:
             # terminate if we havent already terminated
             try:
@@ -357,7 +357,7 @@ def log_archiving_finished(num_links: int):
     print('    - {} links skipped'.format(_LAST_RUN_STATS.skipped))
     print('    - {} links updated'.format(_LAST_RUN_STATS.succeeded + _LAST_RUN_STATS.failed))
     print('    - {} links had errors'.format(_LAST_RUN_STATS.failed))
-    
+
     if Snapshot.objects.count() < 50:
         print()
         print('    {lightred}Hint:{reset} To manage your archive in a Web UI, run:'.format(**ANSI))
@@ -408,7 +408,7 @@ def log_archive_method_started(method: str):
 
 
 def log_archive_method_finished(result: "ArchiveResult"):
-    """quote the argument with whitespace in a command so the user can 
+    """quote the argument with whitespace in a command so the user can
        copy-paste the outputted string directly to run the cmd
     """
     # Prettify CMD string and make it safe to copy-paste by quoting arguments
@@ -428,7 +428,7 @@ def log_archive_method_finished(result: "ArchiveResult"):
                 '{lightyellow}Extractor failed:{reset}'.format(**ANSI),
                 '    {reset}{} {red}{}{reset}'.format(
                     result.output.__class__.__name__.replace('ArchiveError', ''),
-                    result.output, 
+                    result.output,
                     **ANSI,
                 ),
             ]
@@ -523,23 +523,6 @@ def log_removal_finished(all_links: int, to_remove: int):
         print('    Index now contains {} links.'.format(all_links - to_remove))
 
 
-def log_shell_welcome_msg():
-    from .cli import list_subcommands
-
-    print('{green}# ArchiveBox Imports{reset}'.format(**ANSI))
-    print('{green}from archivebox.core.models import Snapshot, ArchiveResult, Tag, User{reset}'.format(**ANSI))
-    print('{green}from archivebox.cli import *\n    {}{reset}'.format("\n    ".join(list_subcommands().keys()), **ANSI))
-    print()
-    print('[i] Welcome to the ArchiveBox Shell!')
-    print('    https://github.com/ArchiveBox/ArchiveBox/wiki/Usage#Shell-Usage')
-    print()
-    print('    {lightred}Hint:{reset} Example use:'.format(**ANSI))
-    print('        print(Snapshot.objects.filter(is_archived=True).count())')
-    print('        Snapshot.objects.get(url="https://example.com").as_json()')
-    print('        add("https://example.com/some/new/url")')
-
-
-
 ### Helpers
 
 @enforce_types
@@ -554,7 +537,7 @@ def pretty_path(path: Union[Path, str], pwd: Union[Path, str]=OUTPUT_DIR) -> str
     # replace long absolute paths with ./ relative ones to save on terminal output width
     if path.startswith(pwd) and (pwd != '/'):
         path = path.replace(pwd, '.', 1)
-    
+
     # quote paths containing spaces
     if ' ' in path:
         path = f'"{path}"'
@@ -614,7 +597,7 @@ def printable_folder_status(name: str, folder: Dict) -> str:
             )
         else:
             num_files = 'missing'
-        
+
     if folder.get('is_mount'):
         # add symbol @ next to filecount if path is a remote filesystem mount
         num_files = f'{num_files} @' if num_files else '@'

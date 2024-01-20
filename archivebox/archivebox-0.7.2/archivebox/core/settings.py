@@ -35,7 +35,6 @@ from ..config import (
 
 IS_MIGRATING = 'makemigrations' in sys.argv[:3] or 'migrate' in sys.argv[:3]
 IS_TESTING = 'test' in sys.argv[:3] or 'PYTEST_CURRENT_TEST' in os.environ
-IS_SHELL = 'shell' in sys.argv[:3] or 'shell_plus' in sys.argv[:3]
 
 ################################################################################
 ### Django Core Settings
@@ -59,10 +58,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
-
     'core',
-
-    'django_extensions',
 ]
 
 
@@ -271,17 +267,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # WIP: broken by Django 3.1.2 -> 4.0 migration
 DEFAULT_AUTO_FIELD = 'django.db.models.UUIDField'
-
-################################################################################
-### Shell Settings
-################################################################################
-
-SHELL_PLUS = 'ipython'
-SHELL_PLUS_PRINT_SQL = False
-IPYTHON_ARGUMENTS = ['--no-confirm-exit', '--no-banner']
-IPYTHON_KERNEL_DISPLAY_NAME = 'ArchiveBox Django Shell'
-if IS_SHELL:
-    os.environ['PYTHONSTARTUP'] = str(Path(PACKAGE_DIR) / 'core' / 'welcome_message.py')
 
 
 ################################################################################

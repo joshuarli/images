@@ -13,7 +13,6 @@ if __name__ == '__main__':
         print('    Hint: Use these archivebox CLI commands instead of the ./manage.py equivalents:')
         print('        archivebox init          (migrates the databse to latest version)')
         print('        archivebox server        (runs the Django web server)')
-        print('        archivebox shell         (opens an iPython Django shell with all models imported)')
         print('        archivebox manage [cmd]  (any other management commands)')
         raise SystemExit(2)
 

@@ -6,8 +6,6 @@
 #
 asgiref==3.7.2
     # via django
-asttokens==2.4.1
-    # via stack-data
 brotli==1.1.0
     # via yt-dlp
 certifi==2023.11.17
@@ -20,42 +18,20 @@ croniter==2.0.1
     # via -r requirements.in
 dateparser==1.2.0
     # via -r requirements.in
-decorator==5.1.1
-    # via ipython
 django==3.1.14
     # via
     #   -r requirements.in
     #   django-extensions
 django-extensions==3.1.5
     # via -r requirements.in
-executing==2.0.1
-    # via stack-data
 idna==3.6
     # via requests
-ipython==8.20.0
-    # via -r requirements.in
-jedi==0.19.1
-    # via ipython
-matplotlib-inline==0.1.6
-    # via ipython
 mutagen==1.47.0
     # via yt-dlp
 mypy-extensions==1.0.0
     # via -r requirements.in
-parso==0.8.3
-    # via jedi
-pexpect==4.9.0
-    # via ipython
-prompt-toolkit==3.0.43
-    # via ipython
-ptyprocess==0.7.0
-    # via pexpect
-pure-eval==0.2.2
-    # via stack-data
 pycryptodomex==3.20.0
     # via yt-dlp
-pygments==2.17.2
-    # via ipython
 python-crontab==3.0.0
     # via -r requirements.in
 python-dateutil==2.8.2
@@ -75,17 +51,9 @@ requests==2.31.0
     #   -r requirements.in
     #   yt-dlp
 six==1.16.0
-    # via
-    #   asttokens
-    #   python-dateutil
+    # via python-dateutil
 sqlparse==0.4.4
     # via django
-stack-data==0.6.3
-    # via ipython
-traitlets==5.14.1
-    # via
-    #   ipython
-    #   matplotlib-inline
 tzlocal==5.2
     # via dateparser
 urllib3==2.1.0
@@ -94,8 +62,6 @@ urllib3==2.1.0
     #   yt-dlp
 w3lib==2.1.2
     # via -r requirements.in
-wcwidth==0.2.13
-    # via prompt-toolkit
 websockets==12.0
     # via yt-dlp
 yt-dlp==2023.12.30
