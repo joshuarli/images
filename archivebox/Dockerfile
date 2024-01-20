@@ -61,6 +61,9 @@ RUN apt-get update -qq \
     && rm -rf /var/lib/apt/lists/*
 
 # do we have yt-dlp on PATH after this?
+COPY "./archivebox-0.7.2/requirements.txt" .
+RUN pip install -r requirements.txt
+
 COPY "./archivebox-0.7.2" .
 RUN pip install .
 

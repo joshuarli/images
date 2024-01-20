@@ -5,19 +5,7 @@ description = "Self-hosted internet archiving solution."
 authors = [
     { name = "Nick Sweeting", email = "pyproject.toml@archivebox.io" },
 ]
-dependencies = [
-    "croniter>=0.3.34",
-    "dateparser>=1.0.0",
-    "django-extensions>=3.0.3",
-    "django>=3.1.3,<3.2",
-    "ipython>5.0.0",
-    "mypy-extensions>=0.4.3",
-    "python-crontab>=2.5.1",
-    "requests>=2.24.0",
-    "w3lib>=1.22.0",
-    "yt-dlp>=2023.10.13",
-]
-requires-python = ">=3.9,<3.12"
+requires-python = ">=3.11,<3.12"
 readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -96,12 +84,9 @@ dev = [
     "django-stubs",
 ]
 
-[tool.pdm.scripts]
-lint = "./bin/lint.sh"
-test = "./bin/test.sh"
-
 [build-system]
 requires = [
     "pdm-backend",
 ]
 build-backend = "pdm.backend"
+
