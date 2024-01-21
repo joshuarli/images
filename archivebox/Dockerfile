@@ -40,6 +40,7 @@ WORKDIR /app
 COPY "./archivebox-0.7.2/archivebox/package.json" "./package-lock.json" .
 RUN apt-get update -qq \
     && apt-get install -qq -y --no-install-recommends gnupg2 \
+    # note: installing via volta results in ~140MB larger layer size
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_21.x nodistro main" >> /etc/apt/sources.list.d/nodejs.list \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && apt-get install -qq -y --no-install-recommends nodejs npm \
@@ -51,7 +52,6 @@ RUN apt-get update -qq \
     && apt-get purge -y --auto-remove gnupg2 npm \
     && rm -rf /var/lib/apt/lists/*
 
-# do we have yt-dlp on PATH after this?
 COPY "./archivebox-0.7.2/requirements.txt" .
 RUN pip install -r requirements.txt
 
